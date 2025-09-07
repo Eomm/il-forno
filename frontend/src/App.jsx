@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
-import './App.css'
 import AddCustomer from './pages/AddCustomer'
 import Planner from './pages/Planner'
 
@@ -8,31 +7,31 @@ function Home () {
   const [count, setCount] = useState(0)
   return (
     <>
-      <div>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button type="button" onClick={() => setCount((count) => count + 1)}>
+      <h1 className="text-3xl font-bold mb-4">Vite + React</h1>
+      <div className="p-6 border rounded-lg shadow-sm mb-4">
+        <button
+          type="button"
+          onClick={() => setCount((c) => c + 1)}
+          className="rounded-md border px-4 py-2 text-base font-medium bg-neutral-900 text-white transition-colors hover:border-indigo-500 dark:bg-neutral-800"
+        >
           count is {count}
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
+        <p className="mt-3 text-sm text-gray-600">
+          Edit <code className="font-mono">src/App.jsx</code> and save to test HMR
         </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <p className="text-gray-500">Click on the Vite and React logos to learn more</p>
     </>
   )
 }
 
 function Layout ({ children }) {
   return (
-    <div>
-      <nav style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-        <Link to="/">Home</Link>
-        <Link to="/add-customer">Add Customer</Link>
-        <Link to="/planner">Planner</Link>
+    <div className="max-w-screen-lg mx-auto p-8 text-center">
+      <nav className="flex gap-3 mb-6 justify-center">
+        <Link to="/" className="text-indigo-600 hover:underline">Home</Link>
+        <Link to="/add-customer" className="text-indigo-600 hover:underline">Add Customer</Link>
+        <Link to="/planner" className="text-indigo-600 hover:underline">Planner</Link>
       </nav>
       <main>{children}</main>
     </div>
