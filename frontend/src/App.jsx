@@ -40,8 +40,9 @@ function Layout ({ children }) {
 }
 
 function App () {
+  const basename = (import.meta.env.BASE_URL || '/').replace(/\/$/, '')
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
