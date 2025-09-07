@@ -1,11 +1,11 @@
 import { useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import './App.css'
+import AddCustomer from './pages/AddCustomer'
+import Planner from './pages/Planner'
 
-function App() {
+function Home () {
   const [count, setCount] = useState(0)
-
   return (
     <>
       <div>
@@ -23,6 +23,33 @@ function App() {
         Click on the Vite and React logos to learn more
       </p>
     </>
+  )
+}
+
+function Layout ({ children }) {
+  return (
+    <div>
+      <nav style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+        <Link to="/">Home</Link>
+        <Link to="/add-customer">Add Customer</Link>
+        <Link to="/planner">Planner</Link>
+      </nav>
+      <main>{children}</main>
+    </div>
+  )
+}
+
+function App () {
+  return (
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/add-customer" element={<AddCustomer />} />
+          <Route path="/planner" element={<Planner />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
   )
 }
 
