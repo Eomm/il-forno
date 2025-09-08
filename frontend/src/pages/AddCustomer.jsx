@@ -40,6 +40,11 @@ export default function AddCustomer () {
     setNextId((n) => n + 1)
   }
 
+  // Rimuovi riga
+  const removeRow = (rowId) => {
+    setRows((prev) => prev.filter((r) => r.id !== rowId))
+  }
+
   const updateRowField = (rowId, field, value) => {
     setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, [field]: value } : r)))
   }
@@ -115,6 +120,7 @@ export default function AddCustomer () {
                       {g.label}
                     </th>
                   ))}
+                  <th scope="col" className="px-2 py-3 text-center font-semibold"><span className="sr-only">Azioni</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -185,6 +191,17 @@ export default function AddCustomer () {
                         </div>
                       </td>
                     ))}
+                    <td className="px-2 py-2 text-center align-middle">
+                      <button
+                        type="button"
+                        onClick={() => removeRow(row.id)}
+                        aria-label="Rimuovi riga"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-bakery-dough bg-white text-bakery-berry hover:bg-bakery-wheat/50 focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
+                        title="Rimuovi riga"
+                      >
+                        ×
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
