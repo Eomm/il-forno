@@ -4,13 +4,13 @@ import { useCustomerDataController } from '../data/useCustomerDataController'
 // Costanti fuori dal componente per evitare ricreazioni ad ogni render
 
 const DAYS = [
-  { key: 'mon', label: 'Lunedì' },
-  { key: 'tue', label: 'Martedì' },
-  { key: 'wed', label: 'Mercoledì' },
-  { key: 'thu', label: 'Giovedì' },
-  { key: 'fri', label: 'Venerdì' },
-  { key: 'sat', label: 'Sabato' },
-  { key: 'sun', label: 'Domenica' },
+  { key: 'mon', label: 'Lun' },
+  { key: 'tue', label: 'Mar' },
+  { key: 'wed', label: 'Mer' },
+  { key: 'thu', label: 'Gio' },
+  { key: 'fri', label: 'Ven' },
+  { key: 'sat', label: 'Sab' },
+  { key: 'sun', label: 'Dom' },
 ]
 
 export default function AddCustomer () {
