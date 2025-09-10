@@ -82,6 +82,54 @@ async function getCustomerByName (name) {
   })
 }
 
+async function loadCounts () {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_CUSTOMERS, 'readonly')
+    const store = tx.objectStore(STORE_CUSTOMERS)
+    const req = store.getAll()
+
+    req.onsuccess = () => {
+      const rows = req.result || []
+      console.log(rows)
+
+      const counts = Object.fromEntries(TIERS.map((t) => [t, 0]))
+      for (const r of rows) {
+        const t = r?.customer?.tier
+        if (t in counts) counts[t] += 1
+      }
+      resolve(counts)
+    }
+
+    req.onerror = () => reject(req.error)
+    tx.oncomplete = () => db.close()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+// Simple name search (case-insensitive, contains). Returns an array of rows.
+async function searchCustomersByName (query) {
+  const q = String(query || '').trim().toLowerCase()
+  if (!q) return []
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_CUSTOMERS, 'readonly')
+    const store = tx.objectStore(STORE_CUSTOMERS)
+    const req = store.getAll()
+
+    req.onsuccess = () => {
+      const rows = (req.result || [])
+        .filter(r => (r?.customer?.name || '').toLowerCase().includes(q))
+        .sort((a, b) => a.customer.name.localeCompare(b.customer.name))
+      resolve(rows)
+    }
+    req.onerror = () => reject(req.error)
+
+    tx.oncomplete = () => db.close()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
 export function useCustomerDataController () {
   const getBreadTypes = () => BREAD_TYPES.map(bt => bt.name)
   const getTiers = () => TIERS
@@ -146,5 +194,7 @@ export function useCustomerDataController () {
     breadTypes: getBreadTypes(),
     tiers: getTiers(),
     submitCustomer,
+    loadCounts,
+    searchCustomers: searchCustomersByName,
   }
 }
