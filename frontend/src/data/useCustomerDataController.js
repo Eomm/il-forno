@@ -1,72 +1,14 @@
 // Data layer utility: bread types, tiers, and submit handler
 
-export const breadTypes = [
-  { id: 1, name: "Tartaruga" },
-  { id: 2, name: "Buffo" },
-  { id: 3, name: "Buffetto" },
-  { id: 4, name: "Spiga" },
-  { id: 5, name: "Spighetta" },
-  { id: 6, name: "Grano duro" },
-  { id: 7, name: "Arabo" },
-  { id: 8, name: "Arabetto" },
-  { id: 9, name: "Olio" },
-  { id: 10, name: "Olio piccolo" },
-  { id: 11, name: "Schizzotto alto da 1" },
-  { id: 12, name: "Schizzotto alto da 2" },
-  { id: 13, name: "Schizzotto alto da 3" },
-  { id: 14, name: "Schizzotto basso da 1" },
-  { id: 15, name: "Schizzotto basso da 2" },
-  { id: 16, name: "Schizzotto basso da 3" },
-  { id: 17, name: "Casereccio da 1" },
-  { id: 18, name: "Casereccio da 2" },
-  { id: 19, name: "Casereccio da 3" },
-  { id: 20, name: "Latte tondo" },
-  { id: 21, name: "Latte lungo" },
-  { id: 22, name: "Latte piccolo" },
-  { id: 23, name: "Integrale lungo" },
-  { id: 24, name: "Integrale tondo" },
-  { id: 25, name: "Integrale tartaruga" },
-  { id: 26, name: "Integrale piccolo" },
-  { id: 27, name: "Soffiata" },
-  { id: 28, name: "Francesina" },
-  { id: 29, name: "Zoccolo" },
-  { id: 30, name: "Zoccolo piccolo" },
-  { id: 31, name: "Ciabatta" },
-  { id: 32, name: "Mantovana" },
-  { id: 33, name: "Mantovanina" },
-  { id: 34, name: "Rosetta grande" },
-  { id: 35, name: "Rosetta piccola" },
-  { id: 36, name: "Spaccatina" },
-  { id: 37, name: "Lunga" },
-  { id: 38, name: "Ciriola" },
-  { id: 39, name: "Corno" },
-  { id: 40, name: "Montasu'" },
-  { id: 41, name: "Corno ferrarese" },
-  { id: 42, name: "Piccola comune" },
-  { id: 43, name: "Curcuma" },
-  { id: 44, name: "Mais" },
-  { id: 45, name: "Multicereale bianco" },
-  { id: 46, name: "Multicerenero" },
-  { id: 47, name: "Zucca" },
-  { id: 48, name: "Segale" },
-  { id: 49, name: "Hamburger" },
-  { id: 50, name: "Uvetta" },
-  { id: 51, name: "Cioccolato" },
-  { id: 52, name: "Filone" },
-  { id: 53, name: "Filone all'olio" },
-  { id: 54, name: "Misto comune" },
-  { id: 55, name: "Misto olio" }
-]
-
-// Removed BREAD_TYPES_LIST; build name->id map directly from breadTypes
-const BREAD_NAME_TO_ID = new Map(breadTypes.map(({ name, id }) => [name, id]))
-
-export const TIERS = ['Este', 'Villa', 'Deserto']
+import { BREAD_TYPES } from './breadTypes'
+import { TIERS } from './tiers'
 
 // IndexedDB setup (simple helper)
 const DB_NAME = 'il-forno'
 const DB_VERSION = 1
 const STORE_CUSTOMERS = 'customers'
+
+const breadNameToId = new Map(BREAD_TYPES.map(({ name, id }) => [name, id]))
 
 function openDB () {
   return new Promise((resolve, reject) => {
@@ -141,7 +83,7 @@ async function getCustomerByName (name) {
 }
 
 export function useCustomerDataController () {
-  const getBreadTypes = () => breadTypes.map(bt => bt.name)
+  const getBreadTypes = () => BREAD_TYPES.map(bt => bt.name)
   const getTiers = () => TIERS
 
   const submitCustomer = async ({ customer, rows }) => {
@@ -173,7 +115,7 @@ export function useCustomerDataController () {
       },
       plan: rows.map((r) => {
         let id = r.breadTypeId
-        if (id == null && r.breadType) id = BREAD_NAME_TO_ID.get(r.breadType)
+        if (id == null && r.breadType) id = breadNameToId.get(r.breadType)
         if (typeof id === 'string') id = parseInt(id, 10)
         if (!Number.isFinite(id)) throw new Error('Tipo di pane non valido in una riga')
         return {
