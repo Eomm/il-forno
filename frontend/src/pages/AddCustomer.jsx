@@ -1,13 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
+import { useCustomerDataController } from '../data/useCustomerDataController'
 
 // Costanti fuori dal componente per evitare ricreazioni ad ogni render
-const TIPI_PANE = [
-  'Pane comune',
-  'Ciabatta',
-  'Baguette',
-  'Integrale',
-  'Senza sale',
-]
 
 const DAYS = [
   { key: 'mon', label: 'Lunedì' },
@@ -28,9 +22,13 @@ export default function AddCustomer () {
   })
 
   const [rows, setRows] = useState([newEmptyRow(1)])
-  const [customer, setCustomer] = useState({ name: '', address: '' })
+  // Aggiunta del campo obbligatorio "tier" nello stato del cliente
+  const [customer, setCustomer] = useState({ name: '', address: '', tier: '' })
   const formRef = useRef(null)
   const [nextId, setNextId] = useState(2)
+
+  // Usa il data controller per accedere ai dati e alla submit
+  const { breadTypes, tiers, submitCustomer } = useCustomerDataController()
 
   // Ogni riga deve avere almeno un giorno selezionato
   const isAnyRowMissingDays = useMemo(() => rows.some((r) => !Object.values(r.days).some(Boolean)), [rows])
@@ -53,14 +51,19 @@ export default function AddCustomer () {
     setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, days: { ...r.days, [dayKey]: checked } } : r)))
   }
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault()
     const form = formRef.current
     if (form && !form.checkValidity()) {
       form.reportValidity()
       return
     }
-    alert('non implementato')
+    try {
+      await submitCustomer({ customer, rows })
+      alert('Cliente creato!')
+    } catch (err) {
+      alert(err.message || 'Errore durante il salvataggio')
+    }
   }
 
   return (
@@ -72,7 +75,7 @@ export default function AddCustomer () {
         {/* Dati cliente */}
         <section className="bg-bakery-cream rounded-lg p-5 md:p-6 border border-bakery-wheat">
           <p className="text-sm text-bakery-choco/80 mb-4">Tutti i campi contrassegnati con <span className="text-bakery-berry font-semibold">*</span> sono obbligatori.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label htmlFor="nome" className="block text-lg font-medium text-bakery-choco">
                 Nome <span className="text-bakery-berry">*</span>
@@ -87,6 +90,25 @@ export default function AddCustomer () {
                 placeholder="Mario Rossi"
                 className="mt-2 w-full rounded-lg border border-bakery-dough bg-white px-4 py-3 text-lg text-bakery-choco placeholder:text-bakery-choco/50 focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
               />
+            </div>
+            {/* Campo Tier obbligatorio */}
+            <div>
+              <label htmlFor="tier" className="block text-lg font-medium text-bakery-choco">
+                Giro <span className="text-bakery-berry">*</span>
+              </label>
+              <select
+                id="tier"
+                name="tier"
+                required
+                value={customer.tier}
+                onChange={(e) => setCustomer((c) => ({ ...c, tier: e.target.value }))}
+                className="mt-2 w-full rounded-lg border border-bakery-dough bg-white px-4 py-3 text-lg text-bakery-choco focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
+              >
+                <option value="" disabled>Seleziona un giro…</option>
+                {tiers.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label htmlFor="indirizzo" className="block text-lg font-medium text-bakery-choco">
@@ -139,7 +161,7 @@ export default function AddCustomer () {
                           const v = e.target.value
                           const q = v.toLowerCase().trim()
                           // Consenti solo valori che sono prefissi di un tipo valido o stringa vuota
-                          const isPrefix = TIPI_PANE.some((t) => t.toLowerCase().startsWith(q))
+                          const isPrefix = breadTypes.some((t) => t.toLowerCase().startsWith(q))
                           if (v === '' || isPrefix) {
                             updateRowField(row.id, 'breadType', v)
                           }
@@ -147,12 +169,12 @@ export default function AddCustomer () {
                         onBlur={(e) => {
                           const v = e.target.value.trim()
                           if (!v) return
-                          const exact = TIPI_PANE.find((t) => t.toLowerCase() === v.toLowerCase())
+                          const exact = breadTypes.find((t) => t.toLowerCase() === v.toLowerCase())
                           if (exact) {
                             // Normalizza il casing al valore della lista
                             updateRowField(row.id, 'breadType', exact)
                           } else {
-                            const suggestion = TIPI_PANE.find((t) => t.toLowerCase().startsWith(v.toLowerCase()))
+                            const suggestion = breadTypes.find((t) => t.toLowerCase().startsWith(v.toLowerCase()))
                             updateRowField(row.id, 'breadType', suggestion || '')
                           }
                         }}
@@ -210,7 +232,7 @@ export default function AddCustomer () {
 
           {/* Datalist condiviso per i tipi di pane */}
           <datalist id="tipi-pane">
-            {TIPI_PANE.map((t) => (
+            {breadTypes.map((t) => (
               <option key={t} value={t} />
             ))}
           </datalist>
