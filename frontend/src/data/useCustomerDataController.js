@@ -7,8 +7,10 @@ import { TIERS } from './tiers'
 const DB_NAME = 'il-forno'
 const DB_VERSION = 1
 const STORE_CUSTOMERS = 'customers'
+const STORE_PLAN = 'plan'
 
 const breadNameToId = new Map(BREAD_TYPES.map(({ name, id }) => [name, id]))
+const breadIdToName = new Map(BREAD_TYPES.map(({ id, name }) => [id, name]))
 
 function openDB () {
   return new Promise((resolve, reject) => {
@@ -16,16 +18,34 @@ function openDB () {
 
     request.onupgradeneeded = () => {
       const db = request.result
-      // Create or upgrade object store
-      let store
+      // Create or upgrade object stores
+      let customersStore
       if (!db.objectStoreNames.contains(STORE_CUSTOMERS)) {
-        store = db.createObjectStore(STORE_CUSTOMERS, { keyPath: 'id', autoIncrement: true })
+        customersStore = db.createObjectStore(STORE_CUSTOMERS, { keyPath: 'id', autoIncrement: true })
       } else {
-        store = request.transaction.objectStore(STORE_CUSTOMERS)
+        customersStore = request.transaction.objectStore(STORE_CUSTOMERS)
       }
-      // Ensure unique index on customer.name
-      if (!store.indexNames.contains('by_name')) {
-        store.createIndex('by_name', 'customer.name', { unique: true })
+      // Ensure indexes on flat fields
+      if (!customersStore.indexNames.contains('by_name_flat')) {
+        customersStore.createIndex('by_name_flat', 'name', { unique: true })
+      }
+      if (!customersStore.indexNames.contains('by_tier_flat')) {
+        customersStore.createIndex('by_tier_flat', 'tier', { unique: false })
+      }
+
+      // Create plan store
+      let planStore
+      if (!db.objectStoreNames.contains(STORE_PLAN)) {
+        planStore = db.createObjectStore(STORE_PLAN, { keyPath: 'id', autoIncrement: true })
+      } else {
+        planStore = request.transaction.objectStore(STORE_PLAN)
+      }
+      // Helpful indexes
+      if (!planStore.indexNames.contains('by_customerId')) {
+        planStore.createIndex('by_customerId', 'customerId', { unique: false })
+      }
+      if (!planStore.indexNames.contains('by_deliveryDate')) {
+        planStore.createIndex('by_deliveryDate', 'deliveryDate', { unique: false })
       }
     }
 
@@ -34,18 +54,58 @@ function openDB () {
   })
 }
 
-async function saveCustomerToDB (payload) {
+async function saveCustomerWithPlanToDB ({ customer, plan }) {
   const db = await openDB()
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_CUSTOMERS, 'readwrite')
-    const store = tx.objectStore(STORE_CUSTOMERS)
-    const req = store.add(payload)
+    const tx = db.transaction([STORE_CUSTOMERS, STORE_PLAN], 'readwrite')
+    const customers = tx.objectStore(STORE_CUSTOMERS)
+    const plans = tx.objectStore(STORE_PLAN)
 
-    req.onsuccess = () => resolve({ id: req.result })
-    req.onerror = () => reject(req.error)
+    const createdAt = new Date().toISOString()
+    // Insert customer (flat schema)
+    const customerToInsert = {
+      name: customer.name,
+      address: customer.address || '',
+      tier: customer.tier,
+      createdAt,
+    }
 
-    tx.oncomplete = () => db.close()
-    tx.onerror = () => reject(tx.error)
+    const addCustomerReq = customers.add(customerToInsert)
+
+    addCustomerReq.onerror = () => reject(addCustomerReq.error)
+
+    addCustomerReq.onsuccess = () => {
+      const customerId = addCustomerReq.result
+      // Insert each plan row
+      for (const r of plan) {
+        const days = r.days || {}
+        const record = {
+          customerId,
+          createdAt,
+          breadTypeId: r.breadTypeId,
+          quantity: r.quantity,
+          deliveryDate: null, // default is NULL; specific deliveries could set this later
+          monday: !!days.mon,
+          tuesday: !!days.tue,
+          wednesday: !!days.wed,
+          thursday: !!days.thu,
+          friday: !!days.fri,
+          saturday: !!days.sat,
+          sunday: !!days.sun,
+        }
+        const addPlanReq = plans.add(record)
+        addPlanReq.onerror = () => reject(addPlanReq.error)
+      }
+    }
+
+    tx.oncomplete = () => {
+      db.close()
+      resolve({ ok: true })
+    }
+    tx.onerror = () => {
+      db.close()
+      reject(tx.error)
+    }
   })
 }
 
@@ -54,24 +114,22 @@ async function getCustomerByName (name) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_CUSTOMERS, 'readonly')
     const store = tx.objectStore(STORE_CUSTOMERS)
-    let index
-    if (store.indexNames && store.indexNames.contains('by_name')) {
-      index = store.index('by_name')
-    } else {
-      index = null
-    }
+
+    let index = null
+    if (store.indexNames && store.indexNames.contains('by_name_flat')) index = store.index('by_name_flat')
 
     if (index) {
       const req = index.get(name)
       req.onsuccess = () => resolve(req.result || null)
       req.onerror = () => reject(req.error)
     } else {
-      // Fallback for older DBs without the index: linear scan
+      // Fallback linear scan
       const cursorReq = store.openCursor()
       cursorReq.onsuccess = (e) => {
         const cursor = e.target.result
         if (!cursor) return resolve(null)
-        if (cursor.value?.customer?.name === name) return resolve(cursor.value)
+        const v = cursor.value
+        if (v?.name === name) return resolve(v)
         cursor.continue()
       }
       cursorReq.onerror = () => reject(cursorReq.error)
@@ -91,11 +149,9 @@ async function loadCounts () {
 
     req.onsuccess = () => {
       const rows = req.result || []
-      console.log(rows)
-
       const counts = Object.fromEntries(TIERS.map((t) => [t, 0]))
       for (const r of rows) {
-        const t = r?.customer?.tier
+        const t = r?.tier
         if (t in counts) counts[t] += 1
       }
       resolve(counts)
@@ -107,7 +163,7 @@ async function loadCounts () {
   })
 }
 
-// Simple name search (case-insensitive, contains). Returns an array of rows.
+// Simple name search (case-insensitive, contains). Returns an array of flat customer rows.
 async function searchCustomersByName (query) {
   const q = String(query || '').trim().toLowerCase()
   if (!q) return []
@@ -119,8 +175,8 @@ async function searchCustomersByName (query) {
 
     req.onsuccess = () => {
       const rows = (req.result || [])
-        .filter(r => (r?.customer?.name || '').toLowerCase().includes(q))
-        .sort((a, b) => a.customer.name.localeCompare(b.customer.name))
+        .filter(r => (r?.name || '').toLowerCase().includes(q))
+        .sort((a, b) => a.name.localeCompare(b.name))
       resolve(rows)
     }
     req.onerror = () => reject(req.error)
@@ -130,16 +186,85 @@ async function searchCustomersByName (query) {
   })
 }
 
+function toISODate (d) {
+  const date = (d instanceof Date) ? d : new Date(d)
+  const local = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  return local.toISOString().slice(0, 10)
+}
+
+function dayNameFromDate (d) {
+  const date = (d instanceof Date) ? d : new Date(d)
+  // 0=Sunday..6=Saturday
+  const idx = date.getDay()
+  return ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][idx]
+}
+
 export function useCustomerDataController () {
   const getBreadTypes = () => BREAD_TYPES.map(bt => bt.name)
   const getTiers = () => TIERS
 
-  // Placeholder: load plan/deliveries for a specific date and tier. Returns empty for now.
+  // Load plan/deliveries for a specific date and tier.
   const getPlanByDate = async (date, tier) => {
-    // date can be a Date or ISO string; normalize if needed later
-    void date
-    void tier
-    return []
+    const targetDayName = dayNameFromDate(date) // e.g., 'monday'
+    const targetISO = toISODate(date)
+
+    const db = await openDB()
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction([STORE_PLAN, STORE_CUSTOMERS], 'readonly')
+      const planStore = tx.objectStore(STORE_PLAN)
+      const customerStore = tx.objectStore(STORE_CUSTOMERS)
+
+      const planReq = planStore.getAll()
+      const custReq = customerStore.getAll()
+
+      let plans = []
+      let customers = []
+
+      planReq.onsuccess = () => { plans = planReq.result || [] }
+      custReq.onsuccess = () => { customers = custReq.result || [] }
+
+      const finish = () => {
+        // Build customer map
+        const customerMap = new Map()
+        for (const c of customers) customerMap.set(c.id, c)
+
+        // Filter plans matching the day/date
+        const filtered = plans.filter((p) => {
+          const matchDate = p.deliveryDate && p.deliveryDate === targetISO
+          const matchDay = !p.deliveryDate && !!p[targetDayName]
+          return matchDate || matchDay
+        })
+
+        // Optional filter by tier (ignore if '0')
+        const byTier = String(tier) === '0'
+          ? filtered
+          : filtered.filter((p) => customerMap.get(p.customerId)?.tier === tier)
+
+        const result = byTier.map((p) => ({
+          customerId: p.customerId,
+          customerName: customerMap.get(p.customerId)?.name || '—',
+          tier: customerMap.get(p.customerId)?.tier || '',
+          breadTypeId: p.breadTypeId,
+          breadTypeName: breadIdToName.get(p.breadTypeId) || '',
+          quantity: p.quantity,
+          deliveryDate: p.deliveryDate,
+          days: {
+            monday: !!p.monday,
+            tuesday: !!p.tuesday,
+            wednesday: !!p.wednesday,
+            thursday: !!p.thursday,
+            friday: !!p.friday,
+            saturday: !!p.saturday,
+            sunday: !!p.sunday,
+          },
+        }))
+
+        resolve(result)
+      }
+
+      tx.oncomplete = finish
+      tx.onerror = () => reject(tx.error)
+    })
   }
 
   const submitCustomer = async ({ customer, rows }) => {
@@ -162,37 +287,29 @@ export function useCustomerDataController () {
     const existing = await getCustomerByName(name)
     if (existing) throw new Error('Esiste già un cliente con questo nome')
 
-    // Prepara payload (adatta ai requisiti del backend se necessario)
-    const payload = {
-      customer: {
-        name,
-        address: customer.address?.trim() || '',
-        tier: customer.tier,
-      },
-      plan: rows.map((r) => {
-        let id = r.breadTypeId
-        if (id == null && r.breadType) id = breadNameToId.get(r.breadType)
-        if (typeof id === 'string') id = parseInt(id, 10)
-        if (!Number.isFinite(id)) throw new Error('Tipo di pane non valido in una riga')
-        return {
-          breadTypeId: id,
-          quantity: r.quantity,
-          days: r.days,
-        }
-      }),
-      createdAt: new Date().toISOString(),
-    }
+    // Prepara customer flat + plan rows
+    const plan = rows.map((r) => {
+      let id = r.breadTypeId
+      if (id == null && r.breadType) id = breadNameToId.get(r.breadType)
+      if (typeof id === 'string') id = parseInt(id, 10)
+      if (!Number.isFinite(id)) throw new Error('Tipo di pane non valido in una riga')
+      return {
+        breadTypeId: id,
+        quantity: r.quantity,
+        days: r.days,
+      }
+    })
 
-    // Salvataggio su IndexedDB
     try {
-      const { id } = await saveCustomerToDB(payload)
-      console.log('Saved customer to IndexedDB', { id, payload })
-      return { ok: true, id }
+      await saveCustomerWithPlanToDB({
+        customer: { name, address: customer.address?.trim() || '', tier: customer.tier },
+        plan,
+      })
+      return { ok: true }
     } catch (err) {
       if (err?.name === 'ConstraintError') {
         throw err
       }
-
       console.error('IndexedDB save failed', err)
       throw new Error('Errore durante il salvataggio locale')
     }

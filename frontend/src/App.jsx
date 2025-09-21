@@ -112,16 +112,13 @@ function Home () {
           <div key={r.id}
             className="rounded-lg border border-bakery-dough bg-white/70 p-4 text-left shadow-sm hover:shadow transition">
             <div className="flex items-center justify-between">
-              <div className="font-semibold text-bakery-brown">{r?.customer?.name}</div>
+              <div className="font-semibold text-bakery-brown">{r.name}</div>
               <span className="text-xs px-2 py-0.5 rounded-full bg-bakery-dough/50 text-bakery-brown">
-                {r?.customer?.tier}
+                {r.tier}
               </span>
             </div>
-            {r?.customer?.address && (
-              <div className="mt-1 text-sm text-bakery-choco/80">{r.customer.address}</div>
-            )}
-            {Array.isArray(r?.plan) && r.plan.length > 0 && (
-              <div className="mt-2 text-xs text-bakery-choco/70">{r.plan.length} righe di consegna</div>
+            {r.address && (
+              <div className="mt-1 text-sm text-bakery-choco/80">{r.address}</div>
             )}
           </div>
         ))}

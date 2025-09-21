@@ -7,6 +7,7 @@ export default function Planner () {
   const [selectedDay, setDaySelected] = useState(new Date())
   const { getPlanByDate, tiers } = useCustomerDataController()
   const [selectedTier, setSelectedTier] = useState('0') // '0' means all
+  const [results, setResults] = useState([]) // Add results state
 
   const formattedDate = useMemo(() => (
     selectedDay
@@ -17,7 +18,9 @@ export default function Planner () {
   // Call when date or tier changes
   useEffect(() => {
     if (!selectedDay) return
-    getPlanByDate(selectedDay, selectedTier).catch(console.error)
+    getPlanByDate(selectedDay, selectedTier)
+      .then(setResults)
+      .catch(console.error)
   }, [selectedDay, selectedTier, getPlanByDate])
 
   return (
@@ -70,12 +73,37 @@ export default function Planner () {
             </div>
           </section>
 
-          {/* Results card (placeholder for now) */}
+          {/* Results card */}
           <section className="bg-bakery-cream rounded-xl border border-bakery-wheat p-5">
             <h2 className="text-xl font-semibold text-bakery-brown mb-3">Consegne</h2>
-            <div className="text-bakery-choco/80">
-              Nessuna consegna per la selezione corrente.
-            </div>
+            {results.length === 0 ? (
+              <div className="text-bakery-choco/80">Nessuna consegna per la selezione corrente.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-bakery-choco/70">
+                      <th className="text-left py-2 px-2">Giro</th>
+                      <th className="text-left py-2 px-2">Cliente</th>
+                      <th className="text-left py-2 px-2">Quantità</th>
+                      <th className="text-left py-2 px-2">Pane</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.map((r, idx) => (
+                      <tr key={`${r.customerId}-${r.breadTypeId}-${r.deliveryDate || idx}`} className="border-t border-bakery-wheat/60">
+                        <td className="py-2 px-2">
+                          <span className="inline-flex items-center rounded-full bg-bakery-wheat/50 text-bakery-brown px-2 py-0.5 text-xs font-medium">{r.tier}</span>
+                        </td>
+                        <td className="py-2 px-2 text-bakery-choco">{r.customerName}</td>
+                        <td className="py-2 px-2 text-bakery-choco font-medium">{r.quantity}</td>
+                        <td className="py-2 px-2 text-bakery-choco">{r.breadTypeName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
         </div>
       </div>
