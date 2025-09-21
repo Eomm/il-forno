@@ -134,6 +134,14 @@ export function useCustomerDataController () {
   const getBreadTypes = () => BREAD_TYPES.map(bt => bt.name)
   const getTiers = () => TIERS
 
+  // Placeholder: load plan/deliveries for a specific date and tier. Returns empty for now.
+  const getPlanByDate = async (date, tier) => {
+    // date can be a Date or ISO string; normalize if needed later
+    void date
+    void tier
+    return []
+  }
+
   const submitCustomer = async ({ customer, rows }) => {
     // Validazioni base
     if (!customer?.name?.trim()) throw new Error('Il nome è obbligatorio')
@@ -196,5 +204,6 @@ export function useCustomerDataController () {
     submitCustomer,
     loadCounts,
     searchCustomers: searchCustomersByName,
+    getPlanByDate,
   }
 }
