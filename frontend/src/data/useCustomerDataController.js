@@ -223,6 +223,22 @@ export function useCustomerDataController () {
   const getTiers = () => TIERS
 
   /**
+   * Delete all local IndexedDB data for this app.
+   * Useful for a clean reset from the Setup page.
+   *
+   * @returns {Promise<void>}
+   */
+  const resetLocalData = async () => {
+    await new Promise((resolve, reject) => {
+      const req = indexedDB.deleteDatabase(DB_NAME)
+      req.onsuccess = () => resolve()
+      req.onerror = () => reject(req.error)
+      // If blocked by open connections, proceed once user refreshes
+      req.onblocked = () => resolve()
+    })
+  }
+
+  /**
    * Loads the plan/deliveries for a specific date and tier.
    *
    * @async
@@ -352,5 +368,6 @@ export function useCustomerDataController () {
     loadCounts,
     searchCustomers: searchCustomersByName,
     getPlanByDate,
+    resetLocalData,
   }
 }

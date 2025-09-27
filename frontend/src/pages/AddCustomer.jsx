@@ -68,8 +68,10 @@ export default function AddCustomer () {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Nuovo cliente</h1>
-      <p className="text-bakery-choco/90 text-lg">Compila i dati del cliente e il piano di consegna predefinito.</p>
+      <header className="space-y-1"> 
+        <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Nuovo cliente</h1>
+        <p className="text-bakery-choco/80">Compila i dati del cliente e il piano di consegna predefinito.</p>
+      </header>
 
       <form ref={formRef} onSubmit={onSubmit} className="space-y-8">
         {/* Dati cliente */}

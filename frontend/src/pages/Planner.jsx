@@ -12,7 +12,7 @@ export default function Planner () {
   const formattedDate = useMemo(() => (
     selectedDay
       ? selectedDay.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
-      : ''
+      : '-'
   ), [selectedDay])
 
   // Compare by: tier (string) -> customerName -> breadTypeName -> quantity
@@ -79,9 +79,6 @@ export default function Planner () {
       <header className="space-y-1">
         <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Calendario</h1>
         <p className="text-bakery-choco/80">Seleziona una data e un giro per visualizzare le consegne.</p>
-        {selectedDay && (
-          <p className="text-bakery-choco/90"><span className="font-semibold">Giorno selezionato:</span> {formattedDate}</p>
-        )}
       </header>
 
       {/* Local styles for the rotating chevron in the summary */}
@@ -110,6 +107,11 @@ export default function Planner () {
         <section className="lg:col-span-7 bg-white rounded-xl border border-bakery-wheat p-4 md:p-5">
           <h2 className="text-lg font-medium text-bakery-choco mb-3">Filtri</h2>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+            <div className="min-w-[220px]">
+              <label htmlFor="tierSelect" className="block text-bakery-choco font-medium mb-2">Giorno selezionato</label>
+              <p className="text-bakery-choco/90">{formattedDate}</p>
+            </div>
+
             <div className="min-w-[220px]">
               <label htmlFor="tierSelect" className="block text-bakery-choco font-medium mb-2">Giro</label>
               <select

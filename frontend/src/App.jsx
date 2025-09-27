@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Link, NavLink } from 'react-router-dom'
 import AddCustomer from './pages/AddCustomer'
 import Planner from './pages/Planner'
+import Setup from './pages/Setup'
 import { useCustomerDataController } from './data/useCustomerDataController'
 
 function Home () {
@@ -58,13 +59,15 @@ function Home () {
 
   return (
     <>
-      <h1 className="text-4xl font-extrabold tracking-tight text-bakery-brown mb-4">Il Forno</h1>
-      <p className="text-bakery-choco/80 mb-6">
-        Benvenuto su Il Forno! Questo sito ti aiuta a gestire i clienti e pianificare le attività del tuo panificio in modo semplice e veloce.
-      </p>
+      <header className="space-y-1 mb-4">
+        <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Il Forno</h1>
+        <p className="text-bakery-choco/80">
+          Benvenuto su Il Forno! Questo sito ti aiuta a gestire i clienti e pianificare le attività del tuo panificio in modo semplice e veloce.
+        </p>
+      </header>
 
       {/* Tier counters */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
         {(tiers || []).map((t) => (
           <div key={t} className="rounded-xl border border-bakery-dough bg-white/70 backdrop-blur p-5 text-left shadow-sm">
             <div className="text-sm text-bakery-choco/70">Clienti</div>
@@ -138,6 +141,7 @@ function Layout ({ children }) {
             <NavLink end to="/" className={({ isActive }) => `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`}>Home</NavLink>
             <NavLink to="/add-customer" className={({ isActive }) => `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`}>Add Customer</NavLink>
             <NavLink to="/planner" className={({ isActive }) => `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`}>Planner</NavLink>
+            <NavLink to="/setup" className={({ isActive }) => `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`}>Setup</NavLink>
           </nav>
         </div>
       </header>
@@ -157,6 +161,7 @@ function App () {
           <Route path="/" element={<Home />} />
           <Route path="/add-customer" element={<AddCustomer />} />
           <Route path="/planner" element={<Planner />} />
+          <Route path="/setup" element={<Setup />} />
         </Routes>
       </Layout>
     </BrowserRouter>
