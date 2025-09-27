@@ -4,7 +4,8 @@ import { useCustomerDataController } from '../data/useCustomerDataController'
 export default function Setup () {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
-  const { resetLocalData } = useCustomerDataController()
+  const { resetLocalData, exportLocalData, importLocalDataFromFile } = useCustomerDataController()
+  const [fileInputKey, setFileInputKey] = useState(0)
 
   const handleResetClick = async () => {
     if (!window.confirm('Sei sicuro di voler cancellare tutti i dati locali? Questa operazione non è reversibile.')) return
@@ -18,6 +19,43 @@ export default function Setup () {
       setMessage('Errore durante la cancellazione dei dati locali.')
     } finally {
       setBusy(false)
+    }
+  }
+
+  const handleExportClick = async () => {
+    setBusy(true)
+    setMessage('')
+    try {
+      const { filename } = await exportLocalData()
+      setMessage(`Database esportato: ${filename}`)
+    } catch (e) {
+      console.error('Export failed', e)
+      setMessage('Errore durante l\'esportazione del database.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleImportClick = () => {
+    const input = document.getElementById('import-file-input')
+    if (input) input.click()
+  }
+
+  const handleFileSelected = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setBusy(true)
+    setMessage('')
+    try {
+      await importLocalDataFromFile(file)
+      setMessage('Database importato correttamente.')
+    } catch (err) {
+      console.error('Import failed', err)
+      setMessage('Errore durante l\'importazione del database.')
+    } finally {
+      setBusy(false)
+      // reset input so same file can be chosen again later
+      setFileInputKey(prev => prev + 1)
     }
   }
 
@@ -39,6 +77,30 @@ export default function Setup () {
           >
             Svuota dati locali (IndexedDB)
           </button>
+          <button
+            type="button"
+            onClick={handleExportClick}
+            disabled={busy}
+            className="inline-flex items-center justify-center rounded-lg bg-bakery-brown px-4 py-2 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Esporta database
+          </button>
+          <button
+            type="button"
+            onClick={handleImportClick}
+            disabled={busy}
+            className="inline-flex items-center justify-center rounded-lg bg-bakery-choco px-4 py-2 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Importa database
+          </button>
+          <input
+            key={fileInputKey}
+            id="import-file-input"
+            type="file"
+            accept="application/json,.json"
+            onChange={handleFileSelected}
+            className="hidden"
+          />
           {busy && <span className="text-sm text-bakery-choco/80">Elaborazione…</span>}
         </div>
         {message && (

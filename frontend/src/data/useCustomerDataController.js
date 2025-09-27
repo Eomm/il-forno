@@ -22,6 +22,7 @@
 import { BREAD_TYPES } from './breadTypes'
 import { TIERS } from './tiers'
 import Dexie from 'dexie'
+import IDBExportImport from 'indexeddb-export-import'
 
 // Dexie setup
 const DB_NAME = 'il-forno'
@@ -135,6 +136,72 @@ export function useCustomerDataController () {
   }
 
   /**
+   * Export the whole IndexedDB database to a downloadable JSON file.
+   * The filename includes a human-readable timestamp.
+   *
+   * @returns {Promise<{filename: string}>} Resolves when the download is triggered.
+   */
+  const exportLocalData = async () => {
+    await db.open()
+    const idbDatabase = db.backendDB()
+
+    const jsonString = await new Promise((resolve, reject) => {
+      IDBExportImport.exportToJsonString(idbDatabase, (err, json) => {
+        if (err) return reject(err)
+        resolve(json)
+      })
+    })
+
+    // Build a safe, human-readable filename: il-forno_YYYY-MM-DD_HH-mm-ss.json
+    const pad = (n) => String(n).padStart(2, '0')
+    const now = new Date()
+    const human = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`
+    const filename = `${DB_NAME}_${human}.json`
+
+    // Trigger download in browser
+    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+
+    return { filename }
+  }
+
+  /**
+   * Import database content from a JSON file produced by exportLocalData.
+   * This will CLEAR existing data before importing.
+   *
+   * @param {File} file - The JSON file to import
+   * @returns {Promise<void>}
+   */
+  const importLocalDataFromFile = async (file) => {
+    if (!file) throw new Error('Nessun file selezionato')
+    const jsonString = await (file.text ? file.text() : new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = reject
+      reader.readAsText(file)
+    }))
+
+    await db.open()
+    const idbDatabase = db.backendDB()
+
+    // Clear existing data, then import
+    await new Promise((resolve, reject) => {
+      IDBExportImport.clearDatabase(idbDatabase, (err) => err ? reject(err) : resolve())
+    })
+
+    await new Promise((resolve, reject) => {
+      IDBExportImport.importFromJsonString(idbDatabase, jsonString, (err) => err ? reject(err) : resolve())
+    })
+  }
+
+  /**
    * Loads the plan/deliveries for a specific date and tier.
    *
    * @async
@@ -245,5 +312,7 @@ export function useCustomerDataController () {
     searchCustomers: searchCustomersByName,
     getPlanByDate,
     resetLocalData,
+    exportLocalData,
+    importLocalDataFromFile,
   }
 }

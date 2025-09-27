@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "dexie": "^4.2.0",
+    "indexeddb-export-import": "^2.1.5",
     "react": "^19.1.1",
     "react-day-picker": "^9.11.0",
     "react-dom": "^19.1.1",
