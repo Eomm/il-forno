@@ -1,5 +1,24 @@
 // Data layer utility: bread types, tiers, and submit handler
 
+/**
+ * @typedef {Object} PlanDelivery
+ * @property {number} customerId - Unique ID of the customer
+ * @property {string} customerName - Name of the customer
+ * @property {string} tier - Tier of the customer
+ * @property {number} breadTypeId - ID of the bread type
+ * @property {string} breadTypeName - Name of the bread type
+ * @property {number} quantity - Quantity for delivery
+ * @property {string|null} deliveryDate - ISO date string if specific delivery, otherwise null
+ * @property {Object} days - Object indicating delivery days (boolean for each day)
+ * @property {boolean} days.monday
+ * @property {boolean} days.tuesday
+ * @property {boolean} days.wednesday
+ * @property {boolean} days.thursday
+ * @property {boolean} days.friday
+ * @property {boolean} days.saturday
+ * @property {boolean} days.sunday
+*/
+
 import { BREAD_TYPES } from './breadTypes'
 import { TIERS } from './tiers'
 
@@ -203,7 +222,15 @@ export function useCustomerDataController () {
   const getBreadTypes = () => BREAD_TYPES.map(bt => bt.name)
   const getTiers = () => TIERS
 
-  // Load plan/deliveries for a specific date and tier.
+  /**
+   * Loads the plan/deliveries for a specific date and tier.
+   *
+   * @async
+   * @function getPlanByDate
+   * @param {Date|string|number} date - The target date (can be a Date object, ISO string, or timestamp).
+   * @param {string|number} tier - The tier to filter by. If '0', returns all tiers.
+   * @returns {Promise<Array<PlanDelivery>>} Resolves to an array of plan objects.
+   */
   const getPlanByDate = async (date, tier) => {
     const targetDayName = dayNameFromDate(date) // e.g., 'monday'
     const targetISO = toISODate(date)
@@ -228,8 +255,11 @@ export function useCustomerDataController () {
         const customerMap = new Map()
         for (const c of customers) customerMap.set(c.id, c)
 
-        // Filter plans matching the day/date
+        // Filter plans matching the day/date AND exclude records created after the selected date
         const filtered = plans.filter((p) => {
+          // Exclude plans created after the target date
+          if (p.createdAt && toISODate(p.createdAt) > targetISO) return false
+
           const matchDate = p.deliveryDate && p.deliveryDate === targetISO
           const matchDay = !p.deliveryDate && !!p[targetDayName]
           return matchDate || matchDay
