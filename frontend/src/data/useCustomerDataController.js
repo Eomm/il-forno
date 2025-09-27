@@ -1,4 +1,4 @@
-// Data layer utility: bread types, tiers, and submit handler
+// Data layer utility: bread types, tiers, and submit handler (Dexie-based)
 
 /**
  * @typedef {Object} PlanDelivery
@@ -21,188 +21,88 @@
 
 import { BREAD_TYPES } from './breadTypes'
 import { TIERS } from './tiers'
+import Dexie from 'dexie'
 
-// IndexedDB setup (simple helper)
+// Dexie setup
 const DB_NAME = 'il-forno'
-const DB_VERSION = 1
 const STORE_CUSTOMERS = 'customers'
 const STORE_PLAN = 'plan'
 
 const breadNameToId = new Map(BREAD_TYPES.map(({ name, id }) => [name, id]))
 const breadIdToName = new Map(BREAD_TYPES.map(({ id, name }) => [id, name]))
 
-function openDB () {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION)
-
-    request.onupgradeneeded = () => {
-      const db = request.result
-      // Create or upgrade object stores
-      let customersStore
-      if (!db.objectStoreNames.contains(STORE_CUSTOMERS)) {
-        customersStore = db.createObjectStore(STORE_CUSTOMERS, { keyPath: 'id', autoIncrement: true })
-      } else {
-        customersStore = request.transaction.objectStore(STORE_CUSTOMERS)
-      }
-      // Ensure indexes on flat fields
-      if (!customersStore.indexNames.contains('by_name_flat')) {
-        customersStore.createIndex('by_name_flat', 'name', { unique: true })
-      }
-      if (!customersStore.indexNames.contains('by_tier_flat')) {
-        customersStore.createIndex('by_tier_flat', 'tier', { unique: false })
-      }
-
-      // Create plan store
-      let planStore
-      if (!db.objectStoreNames.contains(STORE_PLAN)) {
-        planStore = db.createObjectStore(STORE_PLAN, { keyPath: 'id', autoIncrement: true })
-      } else {
-        planStore = request.transaction.objectStore(STORE_PLAN)
-      }
-      // Helpful indexes
-      if (!planStore.indexNames.contains('by_customerId')) {
-        planStore.createIndex('by_customerId', 'customerId', { unique: false })
-      }
-      if (!planStore.indexNames.contains('by_deliveryDate')) {
-        planStore.createIndex('by_deliveryDate', 'deliveryDate', { unique: false })
-      }
-    }
-
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
-  })
+class IlFornoDB extends Dexie {
+  /** @type {Dexie.Table<any, number>} */ customers
+  /** @type {Dexie.Table<any, number>} */ plan
+  constructor () {
+    super(DB_NAME)
+    // Indexes: ++id (PK), &name (unique), tier; plan: ++id, customerId, deliveryDate, createdAt
+    this.version(1).stores({
+      [STORE_CUSTOMERS]: '++id,&name,tier,createdAt',
+      [STORE_PLAN]: '++id,customerId,deliveryDate,createdAt'
+    })
+    this.customers = this.table(STORE_CUSTOMERS)
+    this.plan = this.table(STORE_PLAN)
+  }
 }
 
-async function saveCustomerWithPlanToDB ({ customer, plan }) {
-  const db = await openDB()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction([STORE_CUSTOMERS, STORE_PLAN], 'readwrite')
-    const customers = tx.objectStore(STORE_CUSTOMERS)
-    const plans = tx.objectStore(STORE_PLAN)
+const db = new IlFornoDB()
 
-    const createdAt = new Date().toISOString()
-    // Insert customer (flat schema)
-    const customerToInsert = {
+async function saveCustomerWithPlanToDB ({ customer, plan }) {
+  const createdAt = new Date().toISOString()
+  return db.transaction('rw', db.customers, db.plan, async () => {
+    const customerId = await db.customers.add({
       name: customer.name,
       address: customer.address || '',
       tier: customer.tier,
       createdAt,
-    }
+    })
 
-    const addCustomerReq = customers.add(customerToInsert)
-
-    addCustomerReq.onerror = () => reject(addCustomerReq.error)
-
-    addCustomerReq.onsuccess = () => {
-      const customerId = addCustomerReq.result
-      // Insert each plan row
-      for (const r of plan) {
-        const days = r.days || {}
-        const record = {
-          customerId,
-          createdAt,
-          breadTypeId: r.breadTypeId,
-          quantity: r.quantity,
-          deliveryDate: null, // default is NULL; specific deliveries could set this later
-          monday: !!days.mon,
-          tuesday: !!days.tue,
-          wednesday: !!days.wed,
-          thursday: !!days.thu,
-          friday: !!days.fri,
-          saturday: !!days.sat,
-          sunday: !!days.sun,
-        }
-        const addPlanReq = plans.add(record)
-        addPlanReq.onerror = () => reject(addPlanReq.error)
+    const rows = plan.map((r) => {
+      const days = r.days || {}
+      return {
+        customerId,
+        createdAt,
+        breadTypeId: r.breadTypeId,
+        quantity: r.quantity,
+        deliveryDate: null,
+        monday: !!days.mon,
+        tuesday: !!days.tue,
+        wednesday: !!days.wed,
+        thursday: !!days.thu,
+        friday: !!days.fri,
+        saturday: !!days.sat,
+        sunday: !!days.sun,
       }
-    }
+    })
 
-    tx.oncomplete = () => {
-      db.close()
-      resolve({ ok: true })
-    }
-    tx.onerror = () => {
-      db.close()
-      reject(tx.error)
-    }
+    await db.plan.bulkAdd(rows)
+    return { ok: true }
   })
 }
 
 async function getCustomerByName (name) {
-  const db = await openDB()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_CUSTOMERS, 'readonly')
-    const store = tx.objectStore(STORE_CUSTOMERS)
-
-    let index = null
-    if (store.indexNames && store.indexNames.contains('by_name_flat')) index = store.index('by_name_flat')
-
-    if (index) {
-      const req = index.get(name)
-      req.onsuccess = () => resolve(req.result || null)
-      req.onerror = () => reject(req.error)
-    } else {
-      // Fallback linear scan
-      const cursorReq = store.openCursor()
-      cursorReq.onsuccess = (e) => {
-        const cursor = e.target.result
-        if (!cursor) return resolve(null)
-        const v = cursor.value
-        if (v?.name === name) return resolve(v)
-        cursor.continue()
-      }
-      cursorReq.onerror = () => reject(cursorReq.error)
-    }
-
-    tx.oncomplete = () => db.close()
-    tx.onerror = () => reject(tx.error)
-  })
+  return db.customers.get({ name })
 }
 
 async function loadCounts () {
-  const db = await openDB()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_CUSTOMERS, 'readonly')
-    const store = tx.objectStore(STORE_CUSTOMERS)
-    const req = store.getAll()
-
-    req.onsuccess = () => {
-      const rows = req.result || []
-      const counts = Object.fromEntries(TIERS.map((t) => [t, 0]))
-      for (const r of rows) {
-        const t = r?.tier
-        if (t in counts) counts[t] += 1
-      }
-      resolve(counts)
-    }
-
-    req.onerror = () => reject(req.error)
-    tx.oncomplete = () => db.close()
-    tx.onerror = () => reject(tx.error)
-  })
+  const rows = await db.customers.toArray()
+  const counts = Object.fromEntries(TIERS.map((t) => [t, 0]))
+  for (const r of rows) {
+    const t = r?.tier
+    if (t in counts) counts[t] += 1
+  }
+  return counts
 }
 
 // Simple name search (case-insensitive, contains). Returns an array of flat customer rows.
 async function searchCustomersByName (query) {
   const q = String(query || '').trim().toLowerCase()
   if (!q) return []
-  const db = await openDB()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_CUSTOMERS, 'readonly')
-    const store = tx.objectStore(STORE_CUSTOMERS)
-    const req = store.getAll()
-
-    req.onsuccess = () => {
-      const rows = (req.result || [])
-        .filter(r => (r?.name || '').toLowerCase().includes(q))
-        .sort((a, b) => a.name.localeCompare(b.name))
-      resolve(rows)
-    }
-    req.onerror = () => reject(req.error)
-
-    tx.oncomplete = () => db.close()
-    tx.onerror = () => reject(tx.error)
-  })
+  const rows = await db.customers
+    .filter(r => (r?.name || '').toLowerCase().includes(q))
+    .sortBy('name')
+  return rows
 }
 
 function toISODate (d) {
@@ -229,13 +129,9 @@ export function useCustomerDataController () {
    * @returns {Promise<void>}
    */
   const resetLocalData = async () => {
-    await new Promise((resolve, reject) => {
-      const req = indexedDB.deleteDatabase(DB_NAME)
-      req.onsuccess = () => resolve()
-      req.onerror = () => reject(req.error)
-      // If blocked by open connections, proceed once user refreshes
-      req.onblocked = () => resolve()
-    })
+    await db.delete()
+    // Re-open the database so subsequent operations in the same session work without reload
+    await db.open()
   }
 
   /**
@@ -251,66 +147,46 @@ export function useCustomerDataController () {
     const targetDayName = dayNameFromDate(date) // e.g., 'monday'
     const targetISO = toISODate(date)
 
-    const db = await openDB()
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction([STORE_PLAN, STORE_CUSTOMERS], 'readonly')
-      const planStore = tx.objectStore(STORE_PLAN)
-      const customerStore = tx.objectStore(STORE_CUSTOMERS)
+    const [plans, customers] = await Promise.all([
+      db.plan.toArray(),
+      db.customers.toArray(),
+    ])
 
-      const planReq = planStore.getAll()
-      const custReq = customerStore.getAll()
+    // Build customer map
+    const customerMap = new Map()
+    for (const c of customers) customerMap.set(c.id, c)
 
-      let plans = []
-      let customers = []
-
-      planReq.onsuccess = () => { plans = planReq.result || [] }
-      custReq.onsuccess = () => { customers = custReq.result || [] }
-
-      const finish = () => {
-        // Build customer map
-        const customerMap = new Map()
-        for (const c of customers) customerMap.set(c.id, c)
-
-        // Filter plans matching the day/date AND exclude records created after the selected date
-        const filtered = plans.filter((p) => {
-          // Exclude plans created after the target date
-          if (p.createdAt && toISODate(p.createdAt) > targetISO) return false
-
-          const matchDate = p.deliveryDate && p.deliveryDate === targetISO
-          const matchDay = !p.deliveryDate && !!p[targetDayName]
-          return matchDate || matchDay
-        })
-
-        // Optional filter by tier (ignore if '0')
-        const byTier = String(tier) === '0'
-          ? filtered
-          : filtered.filter((p) => customerMap.get(p.customerId)?.tier === tier)
-
-        const result = byTier.map((p) => ({
-          customerId: p.customerId,
-          customerName: customerMap.get(p.customerId)?.name || '—',
-          tier: customerMap.get(p.customerId)?.tier || '',
-          breadTypeId: p.breadTypeId,
-          breadTypeName: breadIdToName.get(p.breadTypeId) || '',
-          quantity: p.quantity,
-          deliveryDate: p.deliveryDate,
-          days: {
-            monday: !!p.monday,
-            tuesday: !!p.tuesday,
-            wednesday: !!p.wednesday,
-            thursday: !!p.thursday,
-            friday: !!p.friday,
-            saturday: !!p.saturday,
-            sunday: !!p.sunday,
-          },
-        }))
-
-        resolve(result)
-      }
-
-      tx.oncomplete = finish
-      tx.onerror = () => reject(tx.error)
+    // Filter plans matching the day/date AND exclude records created after the selected date
+    const filtered = plans.filter((p) => {
+      if (p.createdAt && toISODate(p.createdAt) > targetISO) return false
+      const matchDate = p.deliveryDate && p.deliveryDate === targetISO
+      const matchDay = !p.deliveryDate && !!p[targetDayName]
+      return matchDate || matchDay
     })
+
+    // Optional filter by tier (ignore if '0')
+    const byTier = String(tier) === '0'
+      ? filtered
+      : filtered.filter((p) => customerMap.get(p.customerId)?.tier === tier)
+
+    return byTier.map((p) => ({
+      customerId: p.customerId,
+      customerName: customerMap.get(p.customerId)?.name || '—',
+      tier: customerMap.get(p.customerId)?.tier || '',
+      breadTypeId: p.breadTypeId,
+      breadTypeName: breadIdToName.get(p.breadTypeId) || '',
+      quantity: p.quantity,
+      deliveryDate: p.deliveryDate,
+      days: {
+        monday: !!p.monday,
+        tuesday: !!p.tuesday,
+        wednesday: !!p.wednesday,
+        thursday: !!p.thursday,
+        friday: !!p.friday,
+        saturday: !!p.saturday,
+        sunday: !!p.sunday,
+      },
+    }))
   }
 
   const submitCustomer = async ({ customer, rows }) => {
