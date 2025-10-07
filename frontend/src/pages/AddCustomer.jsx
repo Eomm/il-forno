@@ -1,16 +1,6 @@
 import { useMemo, useRef, useState, useCallback } from 'react'
 import { useCustomerDataController } from '../data/useCustomerDataController'
-
-// Constants outside component to avoid re-creation
-const DAYS = [
-  { key: 'mon', label: 'Lun' },
-  { key: 'tue', label: 'Mar' },
-  { key: 'wed', label: 'Mer' },
-  { key: 'thu', label: 'Gio' },
-  { key: 'fri', label: 'Ven' },
-  { key: 'sat', label: 'Sab' },
-  { key: 'sun', label: 'Dom' },
-]
+import { CustomerPlanTable } from '../components/CustomerPlanTable'
 
 const newEmptyRow = (id) => ({
   id,
@@ -22,7 +12,6 @@ const newEmptyRow = (id) => ({
 const DATALIST_BREAD_TYPES_ID = 'bread-types'
 
 export default function AddCustomer () {
-
   const [rows, setRows] = useState([newEmptyRow(1)])
   // Aggiunta del campo obbligatorio "tier" nello stato del cliente
   const [customer, setCustomer] = useState({ name: '', address: '', tier: '' })
@@ -40,7 +29,6 @@ export default function AddCustomer () {
     setNextId(n => n + 1)
   }, [nextId])
 
-  // Remove row
   const removeRow = useCallback((rowId) => {
     setRows(prev => prev.filter(r => r.id !== rowId))
   }, [])
@@ -55,21 +43,16 @@ export default function AddCustomer () {
 
   // Customer field handlers
   const handleCustomerNameChange = useCallback((e) => {
-    const value = e.target.value
-    setCustomer(c => ({ ...c, name: value }))
+    setCustomer(c => ({ ...c, name: e.target.value }))
   }, [])
-
   const handleCustomerTierChange = useCallback((e) => {
-    const value = e.target.value
-    setCustomer(c => ({ ...c, tier: value }))
+    setCustomer(c => ({ ...c, tier: e.target.value }))
   }, [])
-
   const handleCustomerAddressChange = useCallback((e) => {
-    const value = e.target.value
-    setCustomer(c => ({ ...c, address: value }))
+    setCustomer(c => ({ ...c, address: e.target.value }))
   }, [])
 
-  // Row handlers
+  // Row handlers and normalization (same logic as earlier inline version)
   const handleBreadTypeChange = useCallback((rowId) => (e) => {
     const v = e.target.value
     const q = v.toLowerCase().trim()
@@ -99,6 +82,20 @@ export default function AddCustomer () {
     updateRowDay(rowId, dayKey, e.target.checked)
   }, [updateRowDay])
 
+  // Adapter callbacks for table (convert primitive to synthetic event expected by existing handlers)
+  const onChangeBreadType = useCallback((rowId, value) => {
+    handleBreadTypeChange(rowId)({ target: { value } })
+  }, [handleBreadTypeChange])
+  const onBlurBreadType = useCallback((rowId, value) => {
+    handleBreadTypeBlur(rowId)({ target: { value } })
+  }, [handleBreadTypeBlur])
+  const onChangeQuantity = useCallback((rowId, value) => {
+    handleQuantityChange(rowId)({ target: { value } })
+  }, [handleQuantityChange])
+  const onToggleDay = useCallback((rowId, dayKey, checked) => {
+    handleDayChange(rowId, dayKey)({ target: { checked } })
+  }, [handleDayChange])
+
   const onSubmit = async (e) => {
     e.preventDefault()
     const form = formRef.current
@@ -113,14 +110,12 @@ export default function AddCustomer () {
       alert(err.message || 'Errore durante il salvataggio')
     }
   }
-
   return (
     <div className="space-y-6">
       <header className="space-y-1"> 
         <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Nuovo cliente</h1>
         <p className="text-bakery-choco/80">Compila i dati del cliente e il piano di consegna predefinito.</p>
       </header>
-
       <form ref={formRef} onSubmit={onSubmit} className="space-y-8">
         {/* Dati cliente */}
         <section className="bg-bakery-cream rounded-lg p-5 md:p-6 border border-bakery-wheat">
@@ -177,113 +172,18 @@ export default function AddCustomer () {
           </div>
         </section>
 
-        {/* Piano di consegna */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-bakery-brown">Piano di consegna predefinito</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full border border-bakery-wheat rounded-lg overflow-hidden text-base">
-              <caption className="sr-only">Tabella per definire tipo di pane, quantità e giorni di consegna</caption>
-              <thead className="bg-bakery-wheat/60">
-                <tr className="text-bakery-choco">
-                  <th scope="col" className="px-3 py-3 text-left font-semibold">Tipo di pane <span className="text-bakery-berry">*</span></th>
-                  <th scope="col" className="px-3 py-3 text-left font-semibold">Quantità <span className="text-bakery-berry">*</span></th>
-                  {DAYS.map((g) => (
-                    <th key={g.key} scope="col" className="px-2 py-3 text-center font-semibold">
-                      {g.label}
-                    </th>
-                  ))}
-                  <th scope="col" className="px-2 py-3 text-center font-semibold"><span className="sr-only">Azioni</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, idx) => (
-                  <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-bakery-cream/60'}>
-                    <td className="px-3 py-2 align-middle">
-                      <label htmlFor={`breadType-${row.id}`} className="sr-only">Tipo di pane</label>
-                      {/* Autocompletamento con datalist per gestire anche centinaia di tipi */}
-                      <input
-                        id={`breadType-${row.id}`}
-                        name={`breadType-${row.id}`}
-                        type="text"
-                        required
-                        value={row.breadType}
-                        onChange={handleBreadTypeChange(row.id)}
-                        onBlur={handleBreadTypeBlur(row.id)}
-                        placeholder="Seleziona tipo di pane"
-                        list={DATALIST_BREAD_TYPES_ID}
-                        autoComplete="off"
-                        className="w-full rounded-lg border border-bakery-dough bg-white px-3 py-2 text-lg text-bakery-choco focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
-                      />
-                    </td>
-                    <td className="px-3 py-2 align-middle">
-                      <label htmlFor={`quantity-${row.id}`} className="sr-only">Quantità</label>
-                      <input
-                        id={`quantity-${row.id}`}
-                        name={`quantity-${row.id}`}
-                        type="number"
-                        min={1}
-                        max={99}
-                        required
-                        value={row.quantity}
-                        onChange={handleQuantityChange(row.id)}
-                        className="w-28 rounded-lg border border-bakery-dough bg-white px-3 py-2 text-lg text-bakery-choco focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
-                      />
-                    </td>
-                    {DAYS.map((g) => (
-                      <td key={`${row.id}-${g.key}`} className="px-2 py-2 text-center align-middle">
-                        <div className="flex items-center justify-center">
-                          <input
-                            id={`day-${g.key}-${row.id}`}
-                            name={`day-${g.key}-${row.id}`}
-                            type="checkbox"
-                            checked={row.days[g.key]}
-                            onChange={handleDayChange(row.id, g.key)}
-                            aria-label={`Consegna ${g.label} per questa riga`}
-                            className="h-6 w-6 accent-bakery-accent focus:ring-4 focus:ring-bakery-accent/30"
-                          />
-                        </div>
-                      </td>
-                    ))}
-                    <td className="px-2 py-2 text-center align-middle">
-                      <button
-                        type="button"
-                        onClick={() => removeRow(row.id)}
-                        aria-label="Rimuovi riga"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-bakery-dough bg-white text-bakery-berry hover:bg-bakery-wheat/50 focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
-                        title="Rimuovi riga"
-                      >
-                        ×
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Datalist condiviso per i tipi di pane */}
-          <datalist id={DATALIST_BREAD_TYPES_ID}>
-            {breadTypes.map((t) => (
-              <option key={t} value={t} />
-            ))}
-          </datalist>
-
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={addRow}
-              className="inline-flex items-center justify-center rounded-lg bg-bakery-pistachio px-4 py-3 text-lg font-semibold text-white hover:opacity-90 focus:outline-none focus:ring-4 focus:ring-bakery-pistachio/40"
-            >
-              Aggiungi riga
-            </button>
-
-            {isAnyRowMissingDays && (
-              <div role="status" className="flex-1 min-w-[280px] md:min-w-[480px] text-bakery-berry bg-bakery-wheat/60 border border-bakery-dough rounded-lg px-4 py-3 text-base">
-                Seleziona almeno un giorno di consegna per ogni riga della tabella.
-              </div>
-            )}
-          </div>
-        </section>
+        <CustomerPlanTable
+          rows={rows}
+          breadTypes={breadTypes}
+          datalistId={DATALIST_BREAD_TYPES_ID}
+          onAddRow={addRow}
+          onRemoveRow={removeRow}
+          onChangeBreadType={onChangeBreadType}
+          onBlurBreadType={onBlurBreadType}
+          onChangeQuantity={onChangeQuantity}
+          onToggleDay={onToggleDay}
+          showMissingDaysWarning={isAnyRowMissingDays}
+        />
 
         <div className="pt-2">
           <button

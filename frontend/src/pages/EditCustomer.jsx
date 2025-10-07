@@ -1,16 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCustomerDataController } from '../data/useCustomerDataController'
-
-const DAYS = [
-  { key: 'mon', label: 'Lun' },
-  { key: 'tue', label: 'Mar' },
-  { key: 'wed', label: 'Mer' },
-  { key: 'thu', label: 'Gio' },
-  { key: 'fri', label: 'Ven' },
-  { key: 'sat', label: 'Sab' },
-  { key: 'sun', label: 'Dom' },
-]
+import { CustomerPlanTable } from '../components/CustomerPlanTable'
 
 export default function EditCustomer () {
   const { id } = useParams()
@@ -71,22 +62,39 @@ export default function EditCustomer () {
 
   const isAnyRowMissingDays = useMemo(() => rows.some((r) => !Object.values(r.days).some(Boolean)), [rows])
 
-  const addRow = () => {
+  const addRow = useCallback(() => {
     setRows(prev => [...prev, newEmptyRow(nextId)])
     setNextId(n => n + 1)
-  }
+  }, [nextId])
 
-  const removeRow = (rowId) => {
+  const removeRow = useCallback((rowId) => {
     setRows(prev => prev.filter(r => r.id !== rowId))
-  }
+  }, [])
 
-  const updateRowField = (rowId, field, value) => {
+  const updateRowField = useCallback((rowId, field, value) => {
     setRows(prev => prev.map(r => (r.id === rowId ? { ...r, [field]: value } : r)))
-  }
+  }, [])
 
-  const updateRowDay = (rowId, dayKey, checked) => {
+  const updateRowDay = useCallback((rowId, dayKey, checked) => {
     setRows(prev => prev.map(r => (r.id === rowId ? { ...r, days: { ...r.days, [dayKey]: checked } } : r)))
-  }
+  }, [])
+
+  // Table adapters (Edit page: allow any input, final validation occurs on submit)
+  const onChangeBreadType = useCallback((rowId, value) => {
+    updateRowField(rowId, 'breadType', value)
+  }, [updateRowField])
+  const onBlurBreadType = useCallback((rowId, value) => {
+    const v = value.trim()
+    if (!v) return
+    const exact = breadTypes.find(t => t.toLowerCase() === v.toLowerCase())
+    if (exact) updateRowField(rowId, 'breadType', exact)
+  }, [breadTypes, updateRowField])
+  const onChangeQuantity = useCallback((rowId, value) => {
+    updateRowField(rowId, 'quantity', Number(value))
+  }, [updateRowField])
+  const onToggleDay = useCallback((rowId, dayKey, checked) => {
+    updateRowDay(rowId, dayKey, checked)
+  }, [updateRowDay])
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -142,12 +150,12 @@ export default function EditCustomer () {
           <p className="text-sm text-bakery-choco/80 mb-4">Il nome non può essere modificato.</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label htmlFor="nome" className="block text-lg font-medium text-bakery-choco">
+              <label htmlFor="name" className="block text-lg font-medium text-bakery-choco">
                 Nome
               </label>
               <input
-                id="nome"
-                name="nome"
+                id="name"
+                name="name"
                 type="text"
                 disabled
                 value={customer.name}
@@ -171,12 +179,12 @@ export default function EditCustomer () {
               </select>
             </div>
             <div>
-              <label htmlFor="indirizzo" className="block text-lg font-medium text-bakery-choco">
+              <label htmlFor="address" className="block text-lg font-medium text-bakery-choco">
                 Indirizzo
               </label>
               <input
-                id="indirizzo"
-                name="indirizzo"
+                id="address"
+                name="address"
                 type="text"
                 value={customer.address}
                 onChange={(e) => setCustomer(c => ({ ...c, address: e.target.value }))}
@@ -186,107 +194,18 @@ export default function EditCustomer () {
             </div>
           </div>
         </section>
-
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-bakery-brown">Piano di consegna predefinito</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full border border-bakery-wheat rounded-lg overflow-hidden text-base">
-              <thead className="bg-bakery-wheat/60">
-                <tr className="text-bakery-choco">
-                  <th className="px-3 py-3 text-left font-semibold">Tipo di pane <span className="text-bakery-berry">*</span></th>
-                  <th className="px-3 py-3 text-left font-semibold">Quantità <span className="text-bakery-berry">*</span></th>
-                  {DAYS.map(g => <th key={g.key} className="px-2 py-3 text-center font-semibold">{g.label}</th>)}
-                  <th className="px-2 py-3 text-center font-semibold"><span className="sr-only">Azioni</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, idx) => (
-                  <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-bakery-cream/60'}>
-                    <td className="px-3 py-2 align-middle">
-                      <label htmlFor={`pane-${row.id}`} className="sr-only">Tipo di pane</label>
-                      <input
-                        id={`pane-${row.id}`}
-                        name={`pane-${row.id}`}
-                        type="text"
-                        required
-                        value={row.breadType}
-                        onChange={(e) => updateRowField(row.id, 'breadType', e.target.value)}
-                        onBlur={(e) => {
-                          const v = e.target.value.trim()
-                          if (!v) return
-                          const exact = breadTypes.find(t => t.toLowerCase() === v.toLowerCase())
-                          if (exact) updateRowField(row.id, 'breadType', exact)
-                          // If not exact, we keep what the user typed; final validation will catch invalid entries
-                        }}
-                        placeholder="Seleziona tipo di pane"
-                        list="tipi-pane"
-                        autoComplete="off"
-                        className="w-full rounded-lg border border-bakery-dough bg-white px-3 py-2 text-lg text-bakery-choco focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
-                      />
-                    </td>
-                    <td className="px-3 py-2 align-middle">
-                      <label htmlFor={`qta-${row.id}`} className="sr-only">Quantità</label>
-                      <input
-                        id={`qta-${row.id}`}
-                        name={`qta-${row.id}`}
-                        type="number"
-                        min={1}
-                        max={99}
-                        required
-                        value={row.quantity}
-                        onChange={(e) => updateRowField(row.id, 'quantity', Number(e.target.value))}
-                        className="w-28 rounded-lg border border-bakery-dough bg-white px-3 py-2 text-lg text-bakery-choco focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
-                      />
-                    </td>
-                    {DAYS.map(g => (
-                      <td key={`${row.id}-${g.key}`} className="px-2 py-2 text-center align-middle">
-                        <div className="flex items-center justify-center">
-                          <input
-                            id={`chk-${g.key}-${row.id}`}
-                            name={`chk-${g.key}-${row.id}`}
-                            type="checkbox"
-                            checked={row.days[g.key]}
-                            onChange={(e) => updateRowDay(row.id, g.key, e.target.checked)}
-                            aria-label={`Consegna ${g.label} per questa riga`}
-                            className="h-6 w-6 accent-bakery-accent focus:ring-4 focus:ring-bakery-accent/30"
-                          />
-                        </div>
-                      </td>
-                    ))}
-                    <td className="px-2 py-2 text-center align-middle">
-                      <button
-                        type="button"
-                        onClick={() => removeRow(row.id)}
-                        aria-label="Rimuovi riga"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-bakery-dough bg-white text-bakery-berry hover:bg-bakery-wheat/50 focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
-                        title="Rimuovi riga"
-                      >
-                        ×
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <datalist id="tipi-pane">
-            {breadTypes.map(t => <option key={t} value={t} />)}
-          </datalist>
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={addRow}
-              className="inline-flex items-center justify-center rounded-lg bg-bakery-pistachio px-4 py-3 text-lg font-semibold text-white hover:opacity-90 focus:outline-none focus:ring-4 focus:ring-bakery-pistachio/40"
-            >
-              Aggiungi riga
-            </button>
-            {isAnyRowMissingDays && (
-              <div role="status" className="flex-1 min-w-[280px] md:min-w-[480px] text-bakery-berry bg-bakery-wheat/60 border border-bakery-dough rounded-lg px-4 py-3 text-base">
-                Seleziona almeno un giorno di consegna per ogni riga della tabella.
-              </div>
-            )}
-          </div>
-        </section>
+        <CustomerPlanTable
+          rows={rows}
+          breadTypes={breadTypes}
+          datalistId="bread-types-edit"
+          onAddRow={addRow}
+          onRemoveRow={removeRow}
+          onChangeBreadType={onChangeBreadType}
+          onBlurBreadType={onBlurBreadType}
+          onChangeQuantity={onChangeQuantity}
+          onToggleDay={onToggleDay}
+          showMissingDaysWarning={isAnyRowMissingDays}
+        />
         <div className="pt-2 flex gap-4 flex-wrap">
           <button
             type="submit"
