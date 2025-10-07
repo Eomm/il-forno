@@ -82,6 +82,47 @@ async function saveCustomerWithPlanToDB ({ customer, plan }) {
   })
 }
 
+async function updateCustomerAndPlanInDB ({ customerId, tier, address, plan }) {
+  const createdAt = new Date().toISOString()
+  return db.transaction('rw', db.customers, db.plan, async () => {
+    // Update customer (name is immutable for now)
+    await db.customers.update(customerId, { tier, address: address || '' })
+    // Remove existing base plan rows (recurring deliveries) for this customer
+    const existingIds = await db.plan.where({ customerId }).and(r => r.deliveryDate == null).primaryKeys()
+    if (existingIds.length) await db.plan.bulkDelete(existingIds)
+    // Insert new plan rows
+    const rows = plan.map((r) => {
+      const days = r.days || {}
+      return {
+        customerId,
+        createdAt,
+        breadTypeId: r.breadTypeId,
+        quantity: r.quantity,
+        deliveryDate: null,
+        monday: !!days.mon,
+        tuesday: !!days.tue,
+        wednesday: !!days.wed,
+        thursday: !!days.thu,
+        friday: !!days.fri,
+        saturday: !!days.sat,
+        sunday: !!days.sun,
+      }
+    })
+    if (rows.length) await db.plan.bulkAdd(rows)
+    return { ok: true }
+  })
+}
+
+async function getCustomerById (id) {
+  return db.customers.get(id)
+}
+
+async function getCustomerPlan (customerId) {
+  const rows = await db.plan.where({ customerId }).toArray()
+  // Filter only base plan (recurring) rows for edit (deliveryDate null)
+  return rows.filter(r => r.deliveryDate == null)
+}
+
 async function getCustomerByName (name) {
   return db.customers.get({ name })
 }
@@ -304,10 +345,74 @@ export function useCustomerDataController () {
     }
   }
 
+  const updateCustomer = async ({ id, customer, rows }) => {
+    if (!Number.isFinite(id)) throw new Error('ID cliente non valido')
+    if (!customer?.tier) throw new Error('Il giro è obbligatorio')
+    // Validazione righe (stesso schema del submit, tranne unicità nome)
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error('Aggiungi almeno una riga di consegna')
+    const invalidRow = rows.find((r) => {
+      const hasBread = r.breadTypeId != null || !!r.breadType
+      const hasQuantity = !!r.quantity
+      const hasDays = Object.values(r.days || {}).some(Boolean)
+      return !hasBread || !hasQuantity || !hasDays
+    })
+    if (invalidRow) throw new Error('Controlla le righe: tipo, quantità e almeno un giorno sono obbligatori')
+
+    const plan = rows.map((r) => {
+      let breadTypeId = r.breadTypeId
+      if (breadTypeId == null && r.breadType) breadTypeId = breadNameToId.get(r.breadType)
+      if (typeof breadTypeId === 'string') breadTypeId = parseInt(breadTypeId, 10)
+      if (!Number.isFinite(breadTypeId)) throw new Error('Tipo di pane non valido in una riga')
+      return {
+        breadTypeId,
+        quantity: r.quantity,
+        days: r.days,
+      }
+    })
+
+    try {
+      await updateCustomerAndPlanInDB({
+        customerId: id,
+        tier: customer.tier,
+        address: customer.address?.trim() || '',
+        plan,
+      })
+      return { ok: true }
+    } catch (err) {
+      console.error('IndexedDB update failed', err)
+      throw new Error('Errore durante l\'aggiornamento del cliente')
+    }
+  }
+
+  const getCustomerWithPlan = async (id) => {
+    const customer = await getCustomerById(id)
+    if (!customer) return null
+    const planRows = await getCustomerPlan(id)
+    return {
+      customer,
+      plan: planRows.map(r => ({
+        breadTypeId: r.breadTypeId,
+        breadTypeName: breadIdToName.get(r.breadTypeId) || '',
+        quantity: r.quantity,
+        days: {
+          mon: !!r.monday,
+          tue: !!r.tuesday,
+          wed: !!r.wednesday,
+          thu: !!r.thursday,
+          fri: !!r.friday,
+          sat: !!r.saturday,
+          sun: !!r.sunday,
+        }
+      }))
+    }
+  }
+
   return {
     breadTypes: getBreadTypes(),
     tiers: getTiers(),
     submitCustomer,
+    updateCustomer,
+    getCustomerWithPlan,
     loadCounts,
     searchCustomers: searchCustomersByName,
     getPlanByDate,

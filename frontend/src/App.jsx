@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Link, NavLink } from 'react-router-dom'
 import AddCustomer from './pages/AddCustomer'
+import EditCustomer from './pages/EditCustomer'
 import Planner from './pages/Planner'
 import Setup from './pages/Setup'
 import { useCustomerDataController } from './data/useCustomerDataController'
@@ -112,8 +113,7 @@ function Home () {
           <div className="text-sm text-bakery-choco/70">Nessun cliente trovato.</div>
         )}
         {results.map((r) => (
-          <div key={r.id}
-            className="rounded-lg border border-bakery-dough bg-white/70 p-4 text-left shadow-sm hover:shadow transition">
+          <Link key={r.id} to={`/customers/${r.id}`} className="block rounded-lg border border-bakery-dough bg-white/70 p-4 text-left shadow-sm hover:shadow hover:border-bakery-berry/60 transition focus:outline-none focus:ring-2 focus:ring-bakery-berry/40">
             <div className="flex items-center justify-between">
               <div className="font-semibold text-bakery-brown">{r.name}</div>
               <span className="text-xs px-2 py-0.5 rounded-full bg-bakery-dough/50 text-bakery-brown">
@@ -123,7 +123,7 @@ function Home () {
             {r.address && (
               <div className="mt-1 text-sm text-bakery-choco/80">{r.address}</div>
             )}
-          </div>
+          </Link>
         ))}
       </div>
     </>
@@ -161,6 +161,7 @@ function App () {
           <Route path="/" element={<Home />} />
           <Route path="/add-customer" element={<AddCustomer />} />
           <Route path="/planner" element={<Planner />} />
+          <Route path="/customers/:id" element={<EditCustomer />} />
           <Route path="/setup" element={<Setup />} />
         </Routes>
       </Layout>
