@@ -20,7 +20,7 @@ export default function EditCustomer () {
   })
 
   const [customer, setCustomer] = useState({ name: '', address: '', tier: '' })
-  const [rows, setRows] = useState([newEmptyRow(1)])
+  const [rows, setRows] = useState([newEmptyRow(customerId)])
   const [nextId, setNextId] = useState(2)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -72,6 +72,7 @@ export default function EditCustomer () {
   }, [])
 
   const updateRowField = useCallback((rowId, field, value) => {
+    console.log({ rowId, field, value })
     setRows(prev => prev.map(r => (r.id === rowId ? { ...r, [field]: value } : r)))
   }, [])
 
@@ -123,7 +124,8 @@ export default function EditCustomer () {
         rows: normalizedRows,
       })
       alert('Cliente aggiornato!')
-      navigate('/')
+      // Instead of navigating to the homepage, reload the current page as requested
+      window.location.reload()
     } catch (err) {
       alert(err.message || 'Errore durante il salvataggio')
     } finally {
