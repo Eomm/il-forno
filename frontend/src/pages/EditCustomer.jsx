@@ -243,6 +243,7 @@ export default function EditCustomer() {
           onToggleDay={onToggleDay}
           showMissingDaysWarning={isAnyRowMissingDays}
         />
+        CUSTOM PLAN TODO
         <div className="pt-2 flex gap-4 flex-wrap">
           <button
             type="submit"

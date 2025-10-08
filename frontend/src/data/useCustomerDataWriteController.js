@@ -41,22 +41,32 @@ async function saveCustomerWithPlanToDB({ customer, plan }) {
 }
 
 async function updateCustomerAndPlanInDB({ customerId, tier, address, plan }) {
-  const createdAt = new Date().toISOString()
+  const nowISO = new Date().toISOString()
   return db.transaction('rw', db.customers, db.plan, async () => {
+    // 1. Update customer basic data
     await db.customers.update(customerId, { tier, address: address || '' })
-    const existingIds = await db.plan
+
+    // 2. Load existing (non delivered) plan rows for diffing
+    const existingRows = await db.plan
       .where({ customerId })
       .and((r) => r.deliveryDate == null)
-      .primaryKeys()
-    if (existingIds.length) await db.plan.bulkDelete(existingIds)
-    const rows = plan.map((r) => {
-      const days = r.days || {}
-      return {
+      .toArray()
+
+    // Index existing rows by breadTypeId for quick lookup (assumption: one row per bread type)
+    const existingByBread = new Map()
+    for (const r of existingRows) existingByBread.set(r.breadTypeId, r)
+
+    // Track operations
+    const updates = []
+    const inserts = []
+    const seenBreadTypeIds = new Set()
+
+    for (const incoming of plan) {
+      const days = incoming.days || {}
+      const normalized = {
         customerId,
-        createdAt,
-        breadTypeId: r.breadTypeId,
-        quantity: r.quantity,
-        deliveryDate: null,
+        breadTypeId: incoming.breadTypeId,
+        quantity: incoming.quantity,
         monday: !!days.mon,
         tuesday: !!days.tue,
         wednesday: !!days.wed,
@@ -65,9 +75,49 @@ async function updateCustomerAndPlanInDB({ customerId, tier, address, plan }) {
         saturday: !!days.sat,
         sunday: !!days.sun,
       }
-    })
-    if (rows.length) await db.plan.bulkAdd(rows)
-    return { ok: true }
+      seenBreadTypeIds.add(incoming.breadTypeId)
+      const existing = existingByBread.get(incoming.breadTypeId)
+      if (!existing) {
+        inserts.push({ ...normalized, createdAt: nowISO, deliveryDate: null })
+        continue
+      }
+      // Compare fields to see if an update is required
+      let changed = false
+      for (const k of [
+        'quantity',
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday',
+      ]) {
+        if (existing[k] !== normalized[k]) {
+          changed = true
+          break
+        }
+      }
+      if (changed) {
+        updates.push({ id: existing.id, changes: normalized })
+      }
+    }
+
+    // Rows to delete: existing rows whose bread type missing in new plan
+    const toDeleteIds = existingRows
+      .filter((r) => !seenBreadTypeIds.has(r.breadTypeId))
+      .map((r) => r.id)
+
+    if (updates.length) {
+      // Dexie bulk update pattern
+      await Promise.all(
+        updates.map((u) => db.plan.update(u.id, { ...u.changes }))
+      )
+    }
+    if (inserts.length) await db.plan.bulkAdd(inserts)
+    if (toDeleteIds.length) await db.plan.bulkDelete(toDeleteIds)
+
+    return { ok: true, inserted: inserts.length, updated: updates.length, deleted: toDeleteIds.length }
   })
 }
 
