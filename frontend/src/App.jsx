@@ -6,9 +6,11 @@ import Planner from './pages/Planner'
 import Setup from './pages/Setup'
 import { useCustomerDataController } from './data/useCustomerDataController'
 
-function Home () {
+function Home() {
   const { tiers, loadCounts, searchCustomers } = useCustomerDataController()
-  const [tierCounts, setTierCounts] = useState(() => Object.fromEntries((tiers || []).map(t => [t, 0])))
+  const [tierCounts, setTierCounts] = useState(() =>
+    Object.fromEntries((tiers || []).map((t) => [t, 0]))
+  )
   // Search state
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
@@ -17,11 +19,11 @@ function Home () {
   useEffect(() => {
     let cancelled = false
 
-    async function refresh () {
+    async function refresh() {
       try {
         const counts = await loadCounts()
         if (cancelled) return
-        const base = Object.fromEntries((tiers || []).map(t => [t, 0]))
+        const base = Object.fromEntries((tiers || []).map((t) => [t, 0]))
         setTierCounts({ ...base, ...counts })
       } catch (e) {
         console.error('Failed to load tier counts', e)
@@ -29,7 +31,9 @@ function Home () {
     }
 
     refresh()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [tiers, loadCounts])
 
   // Debounced customer search
@@ -39,7 +43,9 @@ function Home () {
     if (q.length === 0) {
       setResults([])
       setSearching(false)
-      return () => { cancelled = true }
+      return () => {
+        cancelled = true
+      }
     }
 
     setSearching(true)
@@ -55,7 +61,10 @@ function Home () {
       }
     }, 200)
 
-    return () => { cancelled = true; clearTimeout(t) }
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
   }, [query, searchCustomers])
 
   return (
@@ -63,14 +72,18 @@ function Home () {
       <header className="space-y-1 mb-4">
         <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Il Forno</h1>
         <p className="text-bakery-choco/80">
-          Benvenuto su Il Forno! Questo sito ti aiuta a gestire i clienti e pianificare le attività del tuo panificio in modo semplice e veloce.
+          Benvenuto su Il Forno! Questo sito ti aiuta a gestire i clienti e pianificare le attività
+          del tuo panificio in modo semplice e veloce.
         </p>
       </header>
 
       {/* Tier counters */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
         {(tiers || []).map((t) => (
-          <div key={t} className="rounded-xl border border-bakery-dough bg-white/70 backdrop-blur p-5 text-left shadow-sm">
+          <div
+            key={t}
+            className="rounded-xl border border-bakery-dough bg-white/70 backdrop-blur p-5 text-left shadow-sm"
+          >
             <div className="text-sm text-bakery-choco/70">Clienti</div>
             <div className="text-3xl font-extrabold text-bakery-brown">{tierCounts?.[t] ?? 0}</div>
             <div className="text-bakery-choco/80">{t}</div>
@@ -80,7 +93,10 @@ function Home () {
 
       {/* Customer search */}
       <div className="mb-2 text-left">
-        <label htmlFor="customer-search" className="block text-sm font-medium text-bakery-choco/80 mb-1">
+        <label
+          htmlFor="customer-search"
+          className="block text-sm font-medium text-bakery-choco/80 mb-1"
+        >
           Cerca cliente
         </label>
         <div className="relative">
@@ -96,7 +112,10 @@ function Home () {
             {query && (
               <button
                 type="button"
-                onClick={() => { setQuery(''); setResults([]) }}
+                onClick={() => {
+                  setQuery('')
+                  setResults([])
+                }}
                 className="text-xs text-bakery-choco/70 hover:text-bakery-brown underline-offset-2 hover:underline"
               >
                 Pulisci
@@ -113,16 +132,18 @@ function Home () {
           <div className="text-sm text-bakery-choco/70">Nessun cliente trovato.</div>
         )}
         {results.map((r) => (
-          <Link key={r.id} to={`/customers/${r.id}`} className="block rounded-lg border border-bakery-dough bg-white/70 p-4 text-left shadow-sm hover:shadow hover:border-bakery-berry/60 transition focus:outline-none focus:ring-2 focus:ring-bakery-berry/40">
+          <Link
+            key={r.id}
+            to={`/customers/${r.id}`}
+            className="block rounded-lg border border-bakery-dough bg-white/70 p-4 text-left shadow-sm hover:shadow hover:border-bakery-berry/60 transition focus:outline-none focus:ring-2 focus:ring-bakery-berry/40"
+          >
             <div className="flex items-center justify-between">
               <div className="font-semibold text-bakery-brown">{r.name}</div>
               <span className="text-xs px-2 py-0.5 rounded-full bg-bakery-dough/50 text-bakery-brown">
                 {r.tier}
               </span>
             </div>
-            {r.address && (
-              <div className="mt-1 text-sm text-bakery-choco/80">{r.address}</div>
-            )}
+            {r.address && <div className="mt-1 text-sm text-bakery-choco/80">{r.address}</div>}
           </Link>
         ))}
       </div>
@@ -130,29 +151,63 @@ function Home () {
   )
 }
 
-function Layout ({ children }) {
-  const linkBase = 'px-3 py-1.5 rounded-full text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-bakery-berry/50'
+function Layout({ children }) {
+  const linkBase =
+    'px-3 py-1.5 rounded-full text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-bakery-berry/50'
   return (
     <>
       <header className="sticky top-0 z-10 mb-6 border-b border-bakery-dough/60 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="max-w-screen-lg mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="text-xl font-extrabold tracking-tight text-bakery-brown">Il Forno</Link>
+          <Link to="/" className="text-xl font-extrabold tracking-tight text-bakery-brown">
+            Il Forno
+          </Link>
           <nav className="flex gap-1 rounded-full bg-bakery-dough/40 p-1">
-            <NavLink end to="/" className={({ isActive }) => `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`}>Home</NavLink>
-            <NavLink to="/add-customer" className={({ isActive }) => `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`}>Add Customer</NavLink>
-            <NavLink to="/planner" className={({ isActive }) => `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`}>Planner</NavLink>
-            <NavLink to="/setup" className={({ isActive }) => `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`}>Setup</NavLink>
+            <NavLink
+              end
+              to="/"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`
+              }
+            >
+              Home
+            </NavLink>
+            <NavLink
+              to="/add-customer"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`
+              }
+            >
+              Add Customer
+            </NavLink>
+            <NavLink
+              to="/planner"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`
+              }
+            >
+              Planner
+            </NavLink>
+            <NavLink
+              to="/setup"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`
+              }
+            >
+              Setup
+            </NavLink>
           </nav>
         </div>
       </header>
       <div className="max-w-screen-lg mx-auto px-6">
-        <main className="text-center bg-white/60 rounded-xl p-6 border border-bakery-dough/70 shadow-sm">{children}</main>
+        <main className="text-center bg-white/60 rounded-xl p-6 border border-bakery-dough/70 shadow-sm">
+          {children}
+        </main>
       </div>
     </>
   )
 }
 
-function App () {
+function App() {
   const basename = (import.meta.env.BASE_URL || '/').replace(/\/$/, '')
   return (
     <BrowserRouter basename={basename}>

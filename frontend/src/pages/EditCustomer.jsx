@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useCustomerDataController } from '../data/useCustomerDataController'
 import { CustomerPlanTable } from '../components/CustomerPlanTable'
 
-export default function EditCustomer () {
+export default function EditCustomer() {
   const { id } = useParams()
   const navigate = useNavigate()
   const customerId = Number(id)
@@ -39,7 +39,7 @@ export default function EditCustomer () {
         }
         if (cancelled) return
         let nid = 1
-        const mapped = data.plan.map(r => ({
+        const mapped = data.plan.map((r) => ({
           id: nid++,
           breadTypeId: r.breadTypeId,
           breadType: r.breadTypeName || '',
@@ -48,7 +48,11 @@ export default function EditCustomer () {
         }))
         setRows(mapped.length ? mapped : [newEmptyRow(1)])
         setNextId(mapped.length ? mapped.length + 1 : 2)
-        setCustomer({ name: data.customer.name, address: data.customer.address || '', tier: data.customer.tier })
+        setCustomer({
+          name: data.customer.name,
+          address: data.customer.address || '',
+          tier: data.customer.tier,
+        })
       } catch (e) {
         if (!cancelled) setError(e.message || 'Errore di caricamento')
       } finally {
@@ -56,46 +60,65 @@ export default function EditCustomer () {
       }
     }
     if (Number.isFinite(customerId)) loader()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId])
 
-  const isAnyRowMissingDays = useMemo(() => rows.some((r) => !Object.values(r.days).some(Boolean)), [rows])
+  const isAnyRowMissingDays = useMemo(
+    () => rows.some((r) => !Object.values(r.days).some(Boolean)),
+    [rows]
+  )
 
   const addRow = useCallback(() => {
-    setRows(prev => [...prev, newEmptyRow(nextId)])
-    setNextId(n => n + 1)
+    setRows((prev) => [...prev, newEmptyRow(nextId)])
+    setNextId((n) => n + 1)
   }, [nextId])
 
   const removeRow = useCallback((rowId) => {
-    setRows(prev => prev.filter(r => r.id !== rowId))
+    setRows((prev) => prev.filter((r) => r.id !== rowId))
   }, [])
 
   const updateRowField = useCallback((rowId, field, value) => {
     console.log({ rowId, field, value })
-    setRows(prev => prev.map(r => (r.id === rowId ? { ...r, [field]: value } : r)))
+    setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, [field]: value } : r)))
   }, [])
 
   const updateRowDay = useCallback((rowId, dayKey, checked) => {
-    setRows(prev => prev.map(r => (r.id === rowId ? { ...r, days: { ...r.days, [dayKey]: checked } } : r)))
+    setRows((prev) =>
+      prev.map((r) => (r.id === rowId ? { ...r, days: { ...r.days, [dayKey]: checked } } : r))
+    )
   }, [])
 
   // Table adapters (Edit page: allow any input, final validation occurs on submit)
-  const onChangeBreadType = useCallback((rowId, value) => {
-    updateRowField(rowId, 'breadType', value)
-  }, [updateRowField])
-  const onBlurBreadType = useCallback((rowId, value) => {
-    const v = value.trim()
-    if (!v) return
-    const exact = breadTypes.find(t => t.toLowerCase() === v.toLowerCase())
-    if (exact) updateRowField(rowId, 'breadType', exact)
-  }, [breadTypes, updateRowField])
-  const onChangeQuantity = useCallback((rowId, value) => {
-    updateRowField(rowId, 'quantity', Number(value))
-  }, [updateRowField])
-  const onToggleDay = useCallback((rowId, dayKey, checked) => {
-    updateRowDay(rowId, dayKey, checked)
-  }, [updateRowDay])
+  const onChangeBreadType = useCallback(
+    (rowId, value) => {
+      updateRowField(rowId, 'breadType', value)
+    },
+    [updateRowField]
+  )
+  const onBlurBreadType = useCallback(
+    (rowId, value) => {
+      const v = value.trim()
+      if (!v) return
+      const exact = breadTypes.find((t) => t.toLowerCase() === v.toLowerCase())
+      if (exact) updateRowField(rowId, 'breadType', exact)
+    },
+    [breadTypes, updateRowField]
+  )
+  const onChangeQuantity = useCallback(
+    (rowId, value) => {
+      updateRowField(rowId, 'quantity', Number(value))
+    },
+    [updateRowField]
+  )
+  const onToggleDay = useCallback(
+    (rowId, dayKey, checked) => {
+      updateRowDay(rowId, dayKey, checked)
+    },
+    [updateRowDay]
+  )
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -106,14 +129,18 @@ export default function EditCustomer () {
       return
     }
     // Validate that each breadType matches one of the available breadTypes (case-insensitive)
-    const invalidRow = rows.find(r => r.breadType.trim() && !breadTypes.some(t => t.toLowerCase() === r.breadType.trim().toLowerCase()))
+    const invalidRow = rows.find(
+      (r) =>
+        r.breadType.trim() &&
+        !breadTypes.some((t) => t.toLowerCase() === r.breadType.trim().toLowerCase())
+    )
     if (invalidRow) {
       alert('Seleziona un tipo di pane valido per ogni riga. (Riga #' + invalidRow.id + ')')
       return
     }
     // Canonicalize breadType casing before sending (match the original list value)
-    const normalizedRows = rows.map(r => {
-      const match = breadTypes.find(t => t.toLowerCase() === r.breadType.trim().toLowerCase())
+    const normalizedRows = rows.map((r) => {
+      const match = breadTypes.find((t) => t.toLowerCase() === r.breadType.trim().toLowerCase())
       return { ...r, breadType: match || r.breadType }
     })
     try {
@@ -144,7 +171,9 @@ export default function EditCustomer () {
     <div className="space-y-6">
       <header className="space-y-1">
         <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Modifica cliente</h1>
-        <p className="text-bakery-choco/80">Aggiorna i dati del cliente e il piano di consegna predefinito.</p>
+        <p className="text-bakery-choco/80">
+          Aggiorna i dati del cliente e il piano di consegna predefinito.
+        </p>
       </header>
 
       <form ref={formRef} onSubmit={onSubmit} className="space-y-8">
@@ -173,11 +202,17 @@ export default function EditCustomer () {
                 name="tier"
                 required
                 value={customer.tier}
-                onChange={(e) => setCustomer(c => ({ ...c, tier: e.target.value }))}
+                onChange={(e) => setCustomer((c) => ({ ...c, tier: e.target.value }))}
                 className="mt-2 w-full rounded-lg border border-bakery-dough bg-white px-4 py-3 text-lg text-bakery-choco focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
               >
-                <option value="" disabled>Seleziona un giro…</option>
-                {tiers.map(t => <option key={t} value={t}>{t}</option>)}
+                <option value="" disabled>
+                  Seleziona un giro…
+                </option>
+                {tiers.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -189,7 +224,7 @@ export default function EditCustomer () {
                 name="address"
                 type="text"
                 value={customer.address}
-                onChange={(e) => setCustomer(c => ({ ...c, address: e.target.value }))}
+                onChange={(e) => setCustomer((c) => ({ ...c, address: e.target.value }))}
                 placeholder="Via Roma 1, Milano"
                 className="mt-2 w-full rounded-lg border border-bakery-dough bg-white px-4 py-3 text-lg text-bakery-choco placeholder:text-bakery-choco/50 focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
               />

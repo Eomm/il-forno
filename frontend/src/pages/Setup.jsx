@@ -1,14 +1,19 @@
 import { useState } from 'react'
 import { useCustomerDataController } from '../data/useCustomerDataController'
 
-export default function Setup () {
+export default function Setup() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const { resetLocalData, exportLocalData, importLocalDataFromFile } = useCustomerDataController()
   const [fileInputKey, setFileInputKey] = useState(0)
 
   const handleResetClick = async () => {
-    if (!window.confirm('Sei sicuro di voler cancellare tutti i dati locali? Questa operazione non è reversibile.')) return
+    if (
+      !window.confirm(
+        'Sei sicuro di voler cancellare tutti i dati locali? Questa operazione non è reversibile.'
+      )
+    )
+      return
     setBusy(true)
     setMessage('')
     try {
@@ -30,7 +35,7 @@ export default function Setup () {
       setMessage(`Database esportato: ${filename}`)
     } catch (e) {
       console.error('Export failed', e)
-      setMessage('Errore durante l\'esportazione del database.')
+      setMessage("Errore durante l'esportazione del database.")
     } finally {
       setBusy(false)
     }
@@ -51,11 +56,11 @@ export default function Setup () {
       setMessage('Database importato correttamente.')
     } catch (err) {
       console.error('Import failed', err)
-      setMessage('Errore durante l\'importazione del database.')
+      setMessage("Errore durante l'importazione del database.")
     } finally {
       setBusy(false)
       // reset input so same file can be chosen again later
-      setFileInputKey(prev => prev + 1)
+      setFileInputKey((prev) => prev + 1)
     }
   }
 
@@ -69,7 +74,10 @@ export default function Setup () {
       <section className="bg-white rounded-xl border border-bakery-wheat p-5 space-y-4">
         <div className="flex items-center justify-between">
           {busy && (
-            <span className="inline-flex items-center gap-2 text-sm text-bakery-choco/80" aria-live="polite">
+            <span
+              className="inline-flex items-center gap-2 text-sm text-bakery-choco/80"
+              aria-live="polite"
+            >
               <span className="h-3 w-3 rounded-full border-2 border-bakery-choco/30 border-t-bakery-choco animate-spin" />
               Elaborazione…
             </span>
@@ -82,13 +90,26 @@ export default function Setup () {
             <div className="flex items-start gap-3">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-bakery-berry/10 text-bakery-berry">
                 {/* trash icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0h8m-9 0l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="h-6 w-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0h8m-9 0l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"
+                  />
                 </svg>
               </span>
               <div>
                 <h3 className="font-semibold text-bakery-brown">Svuota dati locali</h3>
-                <p className="text-sm text-bakery-choco/70">Rimuove tutto il contenuto salvato nel browser (IndexedDB).</p>
+                <p className="text-sm text-bakery-choco/70">
+                  Rimuove tutto il contenuto salvato nel browser (IndexedDB).
+                </p>
               </div>
             </div>
             <button
@@ -106,13 +127,26 @@ export default function Setup () {
             <div className="flex items-start gap-3">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-bakery-brown/10 text-bakery-brown">
                 {/* download icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="h-6 w-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"
+                  />
                 </svg>
               </span>
               <div>
                 <h3 className="font-semibold text-bakery-brown">Esporta database</h3>
-                <p className="text-sm text-bakery-choco/70">Scarica un file JSON con tutti i dati per il backup.</p>
+                <p className="text-sm text-bakery-choco/70">
+                  Scarica un file JSON con tutti i dati per il backup.
+                </p>
               </div>
             </div>
             <button
@@ -130,13 +164,26 @@ export default function Setup () {
             <div className="flex items-start gap-3">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-bakery-choco/10 text-bakery-choco">
                 {/* upload icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 21V9m0 0l4 4m-4-4L8 13M4 3h16" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="h-6 w-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 21V9m0 0l4 4m-4-4L8 13M4 3h16"
+                  />
                 </svg>
               </span>
               <div>
                 <h3 className="font-semibold text-bakery-brown">Importa database</h3>
-                <p className="text-sm text-bakery-choco/70">Seleziona un file JSON esportato in precedenza per ripristinare.</p>
+                <p className="text-sm text-bakery-choco/70">
+                  Seleziona un file JSON esportato in precedenza per ripristinare.
+                </p>
               </div>
             </div>
             <button
@@ -159,12 +206,17 @@ export default function Setup () {
         </div>
 
         {message && (
-          <div role="status" aria-live="polite" className="text-sm text-bakery-brown bg-bakery-wheat/50 border border-bakery-dough rounded-md px-3 py-2">
+          <div
+            role="status"
+            aria-live="polite"
+            className="text-sm text-bakery-brown bg-bakery-wheat/50 border border-bakery-dough rounded-md px-3 py-2"
+          >
             {message}
           </div>
         )}
         <p className="text-bakery-choco/70 text-sm">
-          Nota: i dati sono salvati solo nel tuo browser. La cancellazione non influisce su eventuali backup esterni.
+          Nota: i dati sono salvati solo nel tuo browser. La cancellazione non influisce su
+          eventuali backup esterni.
         </p>
       </section>
     </div>

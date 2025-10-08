@@ -11,7 +11,7 @@ const newEmptyRow = (id) => ({
 
 const DATALIST_BREAD_TYPES_ID = 'bread-types'
 
-export default function AddCustomer () {
+export default function AddCustomer() {
   const [rows, setRows] = useState([newEmptyRow(1)])
   // Aggiunta del campo obbligatorio "tier" nello stato del cliente
   const [customer, setCustomer] = useState({ name: '', address: '', tier: '' })
@@ -22,79 +22,108 @@ export default function AddCustomer () {
   const { breadTypes, tiers, submitCustomer } = useCustomerDataController()
 
   // Ogni riga deve avere almeno un giorno selezionato
-  const isAnyRowMissingDays = useMemo(() => rows.some((r) => !Object.values(r.days).some(Boolean)), [rows])
+  const isAnyRowMissingDays = useMemo(
+    () => rows.some((r) => !Object.values(r.days).some(Boolean)),
+    [rows]
+  )
 
   const addRow = useCallback(() => {
-    setRows(prev => [...prev, newEmptyRow(nextId)])
-    setNextId(n => n + 1)
+    setRows((prev) => [...prev, newEmptyRow(nextId)])
+    setNextId((n) => n + 1)
   }, [nextId])
 
   const removeRow = useCallback((rowId) => {
-    setRows(prev => prev.filter(r => r.id !== rowId))
+    setRows((prev) => prev.filter((r) => r.id !== rowId))
   }, [])
 
   const updateRowField = useCallback((rowId, field, value) => {
-    setRows(prev => prev.map(r => (r.id === rowId ? { ...r, [field]: value } : r)))
+    setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, [field]: value } : r)))
   }, [])
 
   const updateRowDay = useCallback((rowId, dayKey, checked) => {
-    setRows(prev => prev.map(r => (r.id === rowId ? { ...r, days: { ...r.days, [dayKey]: checked } } : r)))
+    setRows((prev) =>
+      prev.map((r) => (r.id === rowId ? { ...r, days: { ...r.days, [dayKey]: checked } } : r))
+    )
   }, [])
 
   // Customer field handlers
   const handleCustomerNameChange = useCallback((e) => {
-    setCustomer(c => ({ ...c, name: e.target.value }))
+    setCustomer((c) => ({ ...c, name: e.target.value }))
   }, [])
   const handleCustomerTierChange = useCallback((e) => {
-    setCustomer(c => ({ ...c, tier: e.target.value }))
+    setCustomer((c) => ({ ...c, tier: e.target.value }))
   }, [])
   const handleCustomerAddressChange = useCallback((e) => {
-    setCustomer(c => ({ ...c, address: e.target.value }))
+    setCustomer((c) => ({ ...c, address: e.target.value }))
   }, [])
 
   // Row handlers and normalization (same logic as earlier inline version)
-  const handleBreadTypeChange = useCallback((rowId) => (e) => {
-    const v = e.target.value
-    const q = v.toLowerCase().trim()
-    const isPrefix = breadTypes.some(t => t.toLowerCase().startsWith(q))
-    if (v === '' || isPrefix) {
-      updateRowField(rowId, 'breadType', v)
-    }
-  }, [breadTypes, updateRowField])
+  const handleBreadTypeChange = useCallback(
+    (rowId) => (e) => {
+      const v = e.target.value
+      const q = v.toLowerCase().trim()
+      const isPrefix = breadTypes.some((t) => t.toLowerCase().startsWith(q))
+      if (v === '' || isPrefix) {
+        updateRowField(rowId, 'breadType', v)
+      }
+    },
+    [breadTypes, updateRowField]
+  )
 
-  const handleBreadTypeBlur = useCallback((rowId) => (e) => {
-    const v = e.target.value.trim()
-    if (!v) return
-    const exact = breadTypes.find(t => t.toLowerCase() === v.toLowerCase())
-    if (exact) {
-      updateRowField(rowId, 'breadType', exact)
-    } else {
-      const suggestion = breadTypes.find(t => t.toLowerCase().startsWith(v.toLowerCase()))
-      updateRowField(rowId, 'breadType', suggestion || '')
-    }
-  }, [breadTypes, updateRowField])
+  const handleBreadTypeBlur = useCallback(
+    (rowId) => (e) => {
+      const v = e.target.value.trim()
+      if (!v) return
+      const exact = breadTypes.find((t) => t.toLowerCase() === v.toLowerCase())
+      if (exact) {
+        updateRowField(rowId, 'breadType', exact)
+      } else {
+        const suggestion = breadTypes.find((t) => t.toLowerCase().startsWith(v.toLowerCase()))
+        updateRowField(rowId, 'breadType', suggestion || '')
+      }
+    },
+    [breadTypes, updateRowField]
+  )
 
-  const handleQuantityChange = useCallback((rowId) => (e) => {
-    updateRowField(rowId, 'quantity', Number(e.target.value))
-  }, [updateRowField])
+  const handleQuantityChange = useCallback(
+    (rowId) => (e) => {
+      updateRowField(rowId, 'quantity', Number(e.target.value))
+    },
+    [updateRowField]
+  )
 
-  const handleDayChange = useCallback((rowId, dayKey) => (e) => {
-    updateRowDay(rowId, dayKey, e.target.checked)
-  }, [updateRowDay])
+  const handleDayChange = useCallback(
+    (rowId, dayKey) => (e) => {
+      updateRowDay(rowId, dayKey, e.target.checked)
+    },
+    [updateRowDay]
+  )
 
   // Adapter callbacks for table (convert primitive to synthetic event expected by existing handlers)
-  const onChangeBreadType = useCallback((rowId, value) => {
-    handleBreadTypeChange(rowId)({ target: { value } })
-  }, [handleBreadTypeChange])
-  const onBlurBreadType = useCallback((rowId, value) => {
-    handleBreadTypeBlur(rowId)({ target: { value } })
-  }, [handleBreadTypeBlur])
-  const onChangeQuantity = useCallback((rowId, value) => {
-    handleQuantityChange(rowId)({ target: { value } })
-  }, [handleQuantityChange])
-  const onToggleDay = useCallback((rowId, dayKey, checked) => {
-    handleDayChange(rowId, dayKey)({ target: { checked } })
-  }, [handleDayChange])
+  const onChangeBreadType = useCallback(
+    (rowId, value) => {
+      handleBreadTypeChange(rowId)({ target: { value } })
+    },
+    [handleBreadTypeChange]
+  )
+  const onBlurBreadType = useCallback(
+    (rowId, value) => {
+      handleBreadTypeBlur(rowId)({ target: { value } })
+    },
+    [handleBreadTypeBlur]
+  )
+  const onChangeQuantity = useCallback(
+    (rowId, value) => {
+      handleQuantityChange(rowId)({ target: { value } })
+    },
+    [handleQuantityChange]
+  )
+  const onToggleDay = useCallback(
+    (rowId, dayKey, checked) => {
+      handleDayChange(rowId, dayKey)({ target: { checked } })
+    },
+    [handleDayChange]
+  )
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -112,14 +141,19 @@ export default function AddCustomer () {
   }
   return (
     <div className="space-y-6">
-      <header className="space-y-1"> 
+      <header className="space-y-1">
         <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Nuovo cliente</h1>
-        <p className="text-bakery-choco/80">Compila i dati del cliente e il piano di consegna predefinito.</p>
+        <p className="text-bakery-choco/80">
+          Compila i dati del cliente e il piano di consegna predefinito.
+        </p>
       </header>
       <form ref={formRef} onSubmit={onSubmit} className="space-y-8">
         {/* Dati cliente */}
         <section className="bg-bakery-cream rounded-lg p-5 md:p-6 border border-bakery-wheat">
-          <p className="text-sm text-bakery-choco/80 mb-4">Tutti i campi contrassegnati con <span className="text-bakery-berry font-semibold">*</span> sono obbligatori.</p>
+          <p className="text-sm text-bakery-choco/80 mb-4">
+            Tutti i campi contrassegnati con{' '}
+            <span className="text-bakery-berry font-semibold">*</span> sono obbligatori.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label htmlFor="name" className="block text-lg font-medium text-bakery-choco">
@@ -149,9 +183,13 @@ export default function AddCustomer () {
                 onChange={handleCustomerTierChange}
                 className="mt-2 w-full rounded-lg border border-bakery-dough bg-white px-4 py-3 text-lg text-bakery-choco focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
               >
-                <option value="" disabled>Seleziona un giro…</option>
+                <option value="" disabled>
+                  Seleziona un giro…
+                </option>
                 {tiers.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
                 ))}
               </select>
             </div>

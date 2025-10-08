@@ -3,17 +3,24 @@ import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/style.css'
 import { useCustomerDataController } from '../data/useCustomerDataController'
 
-export default function Planner () {
+export default function Planner() {
   const [selectedDay, setDaySelected] = useState(new Date())
   const { getPlanByDate, tiers } = useCustomerDataController()
   const [selectedTier, setSelectedTier] = useState('0') // '0' means all
   const [results, setResults] = useState([]) // Add results state
 
-  const formattedDate = useMemo(() => (
-    selectedDay
-      ? selectedDay.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
-      : '-'
-  ), [selectedDay])
+  const formattedDate = useMemo(
+    () =>
+      selectedDay
+        ? selectedDay.toLocaleDateString('it-IT', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          })
+        : '-',
+    [selectedDay]
+  )
 
   // Compare by: tier (string) -> customerName -> breadTypeName -> quantity
   /**
@@ -66,19 +73,29 @@ export default function Planner () {
       const qty = Number(r.quantity) || 0
       map.set(key, (map.get(key) || 0) + qty)
     }
-    const arr = Array.from(map.entries()).map(([breadTypeName, totalQuantity]) => ({ breadTypeName, totalQuantity }))
-    arr.sort((a, b) => a.breadTypeName.localeCompare(b.breadTypeName, 'it', { sensitivity: 'base' }))
+    const arr = Array.from(map.entries()).map(([breadTypeName, totalQuantity]) => ({
+      breadTypeName,
+      totalQuantity,
+    }))
+    arr.sort((a, b) =>
+      a.breadTypeName.localeCompare(b.breadTypeName, 'it', { sensitivity: 'base' })
+    )
     return arr
   }, [results])
 
-  const totalPieces = useMemo(() => summaryRows.reduce((acc, r) => acc + r.totalQuantity, 0), [summaryRows])
+  const totalPieces = useMemo(
+    () => summaryRows.reduce((acc, r) => acc + r.totalQuantity, 0),
+    [summaryRows]
+  )
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <header className="space-y-1">
         <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Calendario</h1>
-        <p className="text-bakery-choco/80">Seleziona una data e un giro per visualizzare le consegne.</p>
+        <p className="text-bakery-choco/80">
+          Seleziona una data e un giro per visualizzare le consegne.
+        </p>
       </header>
 
       {/* Local styles for the rotating chevron in the summary */}
@@ -108,22 +125,31 @@ export default function Planner () {
           <h2 className="text-lg font-medium text-bakery-choco mb-3">Filtri</h2>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
             <div className="min-w-[220px]">
-              <label htmlFor="tierSelect" className="block text-bakery-choco font-medium mb-2">Giorno selezionato</label>
+              <label htmlFor="tierSelect" className="block text-bakery-choco font-medium mb-2">
+                Giorno selezionato
+              </label>
               <p className="text-bakery-choco/90">{formattedDate}</p>
             </div>
 
             <div className="min-w-[220px]">
-              <label htmlFor="tierSelect" className="block text-bakery-choco font-medium mb-2">Giro</label>
+              <label htmlFor="tierSelect" className="block text-bakery-choco font-medium mb-2">
+                Giro
+              </label>
               <select
                 id="tierSelect"
                 value={selectedTier}
                 onChange={(e) => setSelectedTier(e.target.value)}
                 className="w-full rounded-md border border-bakery-dough bg-white px-3 py-2 text-bakery-choco focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
               >
-                <option key='all' value="0">Tutti</option>
-                {Array.isArray(tiers) && tiers.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
+                <option key="all" value="0">
+                  Tutti
+                </option>
+                {Array.isArray(tiers) &&
+                  tiers.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
@@ -134,13 +160,24 @@ export default function Planner () {
           <details>
             <summary className="flex items-center justify-between cursor-pointer select-none">
               <span className="inline-flex items-center gap-2">
-                <svg className="chevron h-4 w-4 text-bakery-choco/70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                <svg
+                  className="chevron h-4 w-4 text-bakery-choco/70"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 <span className="text-xl font-semibold text-bakery-brown">Riepilogo per pane</span>
                 <span className="text-bakery-choco/60 text-xs">(clicca per aprire/chiudere)</span>
               </span>
-              <span className="text-bakery-choco/80 text-sm">{summaryRows.length} tipi • {totalPieces} pezzi</span>
+              <span className="text-bakery-choco/80 text-sm">
+                {summaryRows.length} tipi • {totalPieces} pezzi
+              </span>
             </summary>
             <div className="mt-3 overflow-x-auto">
               {summaryRows.length === 0 ? (
@@ -156,8 +193,12 @@ export default function Planner () {
                   <tbody>
                     {summaryRows.map((row) => (
                       <tr key={row.breadTypeName} className="border-t border-bakery-wheat/60">
-                        <td className="py-2 px-2 text-left text-bakery-choco ">{row.breadTypeName}</td>
-                        <td className="py-2 px-2 text-left text-bakery-choco font-medium">{row.totalQuantity}</td>
+                        <td className="py-2 px-2 text-left text-bakery-choco ">
+                          {row.breadTypeName}
+                        </td>
+                        <td className="py-2 px-2 text-left text-bakery-choco font-medium">
+                          {row.totalQuantity}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -185,13 +226,20 @@ export default function Planner () {
                 </thead>
                 <tbody>
                   {results.map((r, idx) => (
-                    <tr key={`${r.customerId}-${r.breadTypeId}-${r.deliveryDate || idx}`} className="border-t border-bakery-wheat/60">
+                    <tr
+                      key={`${r.customerId}-${r.breadTypeId}-${r.deliveryDate || idx}`}
+                      className="border-t border-bakery-wheat/60"
+                    >
                       <td className="py-2 px-2 text-left">
-                        <span className="inline-flex items-center rounded-full bg-bakery-wheat/50 text-bakery-brown px-2 py-0.5 text-xs font-medium">{r.tier}</span>
+                        <span className="inline-flex items-center rounded-full bg-bakery-wheat/50 text-bakery-brown px-2 py-0.5 text-xs font-medium">
+                          {r.tier}
+                        </span>
                       </td>
                       <td className="py-2 px-2 text-left text-bakery-choco">{r.customerName}</td>
                       <td className="py-2 px-2 text-left text-bakery-choco">{r.breadTypeName}</td>
-                      <td className="py-2 px-2 text-left text-bakery-choco font-medium">{r.quantity}</td>
+                      <td className="py-2 px-2 text-left text-bakery-choco font-medium">
+                        {r.quantity}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -37,22 +37,34 @@ export function CustomerPlanTable({
       <h2 className="text-2xl font-semibold text-bakery-brown">Piano di consegna predefinito</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full border border-bakery-wheat rounded-lg overflow-hidden text-base">
-          <caption className="sr-only">Tabella per definire tipo di pane, quantità e giorni di consegna</caption>
+          <caption className="sr-only">
+            Tabella per definire tipo di pane, quantità e giorni di consegna
+          </caption>
           <thead className="bg-bakery-wheat/60">
             <tr className="text-bakery-choco">
-              <th scope="col" className="px-3 py-3 text-left font-semibold">Tipo di pane <span className="text-bakery-berry">*</span></th>
-              <th scope="col" className="px-3 py-3 text-left font-semibold">Quantità <span className="text-bakery-berry">*</span></th>
-              {DAYS.map(g => (
-                <th key={g.key} scope="col" className="px-2 py-3 text-center font-semibold">{g.label}</th>
+              <th scope="col" className="px-3 py-3 text-left font-semibold">
+                Tipo di pane <span className="text-bakery-berry">*</span>
+              </th>
+              <th scope="col" className="px-3 py-3 text-left font-semibold">
+                Quantità <span className="text-bakery-berry">*</span>
+              </th>
+              {DAYS.map((g) => (
+                <th key={g.key} scope="col" className="px-2 py-3 text-center font-semibold">
+                  {g.label}
+                </th>
               ))}
-              <th scope="col" className="px-2 py-3 text-center font-semibold"><span className="sr-only">Azioni</span></th>
+              <th scope="col" className="px-2 py-3 text-center font-semibold">
+                <span className="sr-only">Azioni</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row, idx) => (
               <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-bakery-cream/60'}>
                 <td className="px-3 py-2 align-middle">
-                  <label htmlFor={`breadType-${row.id}`} className="sr-only">Tipo di pane</label>
+                  <label htmlFor={`breadType-${row.id}`} className="sr-only">
+                    Tipo di pane
+                  </label>
                   <input
                     id={`breadType-${row.id}`}
                     name={`breadType-${row.id}`}
@@ -61,7 +73,9 @@ export function CustomerPlanTable({
                     value={row.breadType}
                     disabled={disabled}
                     onChange={(e) => onChangeBreadType(row.id, e.target.value)}
-                    onBlur={onBlurBreadType ? (e) => onBlurBreadType(row.id, e.target.value) : undefined}
+                    onBlur={
+                      onBlurBreadType ? (e) => onBlurBreadType(row.id, e.target.value) : undefined
+                    }
                     placeholder="Seleziona tipo di pane"
                     list={datalistId}
                     autoComplete="off"
@@ -69,7 +83,9 @@ export function CustomerPlanTable({
                   />
                 </td>
                 <td className="px-3 py-2 align-middle">
-                  <label htmlFor={`quantity-${row.id}`} className="sr-only">Quantità</label>
+                  <label htmlFor={`quantity-${row.id}`} className="sr-only">
+                    Quantità
+                  </label>
                   <input
                     id={`quantity-${row.id}`}
                     name={`quantity-${row.id}`}
@@ -83,7 +99,7 @@ export function CustomerPlanTable({
                     className="w-28 rounded-lg border border-bakery-dough bg-white px-3 py-2 text-lg text-bakery-choco disabled:bg-bakery-wheat/40 focus:outline-none focus:ring-4 focus:ring-bakery-accent/30"
                   />
                 </td>
-                {DAYS.map(g => (
+                {DAYS.map((g) => (
                   <td key={`${row.id}-${g.key}`} className="px-2 py-2 text-center align-middle">
                     <div className="flex items-center justify-center">
                       <input
@@ -119,7 +135,9 @@ export function CustomerPlanTable({
         </table>
       </div>
       <datalist id={datalistId}>
-        {breadTypes.map(t => <option key={t} value={t} />)}
+        {breadTypes.map((t) => (
+          <option key={t} value={t} />
+        ))}
       </datalist>
       <div className="flex items-center justify-between flex-wrap gap-3">
         <button
@@ -131,7 +149,10 @@ export function CustomerPlanTable({
           Aggiungi riga
         </button>
         {warning && (
-          <div role="status" className="flex-1 min-w-[280px] md:min-w-[480px] text-bakery-berry bg-bakery-wheat/60 border border-bakery-dough rounded-lg px-4 py-3 text-base">
+          <div
+            role="status"
+            className="flex-1 min-w-[280px] md:min-w-[480px] text-bakery-berry bg-bakery-wheat/60 border border-bakery-dough rounded-lg px-4 py-3 text-base"
+          >
             Seleziona almeno un giorno di consegna per ogni riga della tabella.
           </div>
         )}
