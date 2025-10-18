@@ -142,7 +142,7 @@ export default function AddCustomer() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Nuovo cliente</h1>
+        <h2 className="text-3xl md:text-4xl font-bold text-bakery-brown">Nuovo cliente</h2>
         <p className="text-bakery-choco/80">
           Compila i dati del cliente e il piano di consegna predefinito.
         </p>

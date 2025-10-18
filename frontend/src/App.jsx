@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, NavLink } from 'react-router-dom'
 import AddCustomer from './pages/AddCustomer'
 import EditCustomer from './pages/EditCustomer'
 import Planner from './pages/Planner'
+import Delivery from './pages/Delivery'
 import Setup from './pages/Setup'
 import { useCustomerDataController } from './data/useCustomerDataController'
 
@@ -70,7 +71,7 @@ function Home() {
   return (
     <>
       <header className="space-y-1 mb-4">
-        <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Il Forno</h1>
+        <h2 className="text-3xl md:text-4xl font-bold text-bakery-brown">Il Forno</h2>
         <p className="text-bakery-choco/80">
           Benvenuto su Il Forno! Questo sito ti aiuta a gestire i clienti e pianificare le attività
           del tuo panificio in modo semplice e veloce.
@@ -188,6 +189,14 @@ function Layout({ children }) {
               Planner
             </NavLink>
             <NavLink
+              to="/delivery"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`
+              }
+            >
+              Consegne
+            </NavLink>
+            <NavLink
               to="/setup"
               className={({ isActive }) =>
                 `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`
@@ -216,6 +225,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/add-customer" element={<AddCustomer />} />
           <Route path="/planner" element={<Planner />} />
+          <Route path="/delivery" element={<Delivery />} />
           <Route path="/customers/:id" element={<EditCustomer />} />
           <Route path="/setup" element={<Setup />} />
         </Routes>

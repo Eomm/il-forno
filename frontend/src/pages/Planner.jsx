@@ -166,7 +166,7 @@ export default function Planner() {
     <div className="space-y-6">
       {/* Header */}
       <header className="space-y-1">
-        <h1 className="text-3xl md:text-4xl font-bold text-bakery-brown">Calendario</h1>
+        <h2 className="text-3xl md:text-4xl font-bold text-bakery-brown">Calendario</h2>
         <p className="text-bakery-choco/80">
           Seleziona una data e un giro per visualizzare le consegne.
         </p>
