@@ -357,10 +357,11 @@ export default function Planner() {
                 type="button"
                 onClick={handleSaveDeliveries}
                 disabled={saving || deliveredPlanIds.length === 0}
-                className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-4 focus:ring-bakery-accent/30 disabled:opacity-40 disabled:cursor-not-allowed ${deliveredPlanIds.length > 0
+                className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-4 focus:ring-bakery-accent/30 disabled:opacity-40 disabled:cursor-not-allowed ${
+                  deliveredPlanIds.length > 0
                     ? 'bg-bakery-accent text-white hover:opacity-90'
                     : 'bg-bakery-wheat text-bakery-choco'
-                  }`}
+                }`}
                 aria-disabled={saving || deliveredPlanIds.length === 0}
               >
                 {saving ? 'Salvataggio…' : 'Salva consegne'}

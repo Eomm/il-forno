@@ -5,11 +5,11 @@ import { breadNameToId, db } from './useCustomerDataReadController'
 import { BREAD_TYPES } from './breadTypes'
 
 // Internal helpers (write-only)
-async function getCustomerByName (name) {
+async function getCustomerByName(name) {
   return db.customers.get({ name })
 }
 
-async function saveCustomerWithPlanToDB ({ customer, plan }) {
+async function saveCustomerWithPlanToDB({ customer, plan }) {
   const createdAt = new Date().toISOString()
   return db.transaction('rw', db.customers, db.plan, async () => {
     const customerId = await db.customers.add({
@@ -40,7 +40,7 @@ async function saveCustomerWithPlanToDB ({ customer, plan }) {
   })
 }
 
-async function updateCustomerAndPlanInDB ({ customerId, tier, address, plan }) {
+async function updateCustomerAndPlanInDB({ customerId, tier, address, plan }) {
   const nowISO = new Date().toISOString()
   return db.transaction('rw', db.customers, db.plan, async () => {
     // 1. Update customer basic data
@@ -109,12 +109,12 @@ async function updateCustomerAndPlanInDB ({ customerId, tier, address, plan }) {
 }
 
 // Public write functions
-async function resetLocalData () {
+async function resetLocalData() {
   await db.delete()
   await db.open()
 }
 
-async function exportLocalData () {
+async function exportLocalData() {
   await db.open()
   const idbDatabase = db.backendDB()
   const jsonString = await new Promise((resolve, reject) => {
@@ -139,16 +139,16 @@ async function exportLocalData () {
   return { filename }
 }
 
-async function importLocalDataFromFile (file) {
+async function importLocalDataFromFile(file) {
   if (!file) throw new Error('Nessun file selezionato')
   const jsonString = await (file.text
     ? file.text()
     : new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = reject
-      reader.readAsText(file)
-    }))
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsText(file)
+      }))
   await db.open()
   const idbDatabase = db.backendDB()
   await new Promise((resolve, reject) => {
@@ -161,7 +161,7 @@ async function importLocalDataFromFile (file) {
   })
 }
 
-async function submitCustomer ({ customer, rows }) {
+async function submitCustomer({ customer, rows }) {
   if (!customer?.name?.trim()) throw new Error('Il nome è obbligatorio')
   if (!customer?.tier) throw new Error('Il giro è obbligatorio')
   if (!Array.isArray(rows) || rows.length === 0)
@@ -197,7 +197,7 @@ async function submitCustomer ({ customer, rows }) {
   }
 }
 
-async function updateCustomer ({ id, customer, rows }) {
+async function updateCustomer({ id, customer, rows }) {
   if (!Number.isFinite(id)) throw new Error('ID cliente non valido')
   if (!customer?.tier) throw new Error('Il giro è obbligatorio')
   if (!Array.isArray(rows) || rows.length === 0)
@@ -229,7 +229,7 @@ async function updateCustomer ({ id, customer, rows }) {
   }
 }
 
-export function useCustomerDataWriteController () {
+export function useCustomerDataWriteController() {
   // Expose only write / maintenance operations
   return {
     submitCustomer,
@@ -248,7 +248,7 @@ export function useCustomerDataWriteController () {
  * @param {Object} params
  * @param {Array<{planId: string|number, quantity: number, customerId: number, breadTypeId: number}>} params.items
  */
-async function saveDelivery ({ items }) {
+async function saveDelivery({ items }) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error('Nessuna consegna da salvare')
   }
