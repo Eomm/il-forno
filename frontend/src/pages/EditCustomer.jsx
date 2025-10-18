@@ -20,8 +20,8 @@ export default function EditCustomer() {
   })
 
   const [customer, setCustomer] = useState({ name: '', address: '', tier: '' })
-  const [rows, setRows] = useState([newEmptyRow(customerId)])
-  const [nextId, setNextId] = useState(2)
+  const [rows, setRows] = useState([newEmptyRow(-100)])
+  const [nextId, setNextId] = useState(-1000)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -38,16 +38,15 @@ export default function EditCustomer() {
           return
         }
         if (cancelled) return
-        let nid = 1
+
         const mapped = data.plan.map((r) => ({
-          id: nid++,
+          id: r.planId,
           breadTypeId: r.breadTypeId,
           breadType: r.breadTypeName || '',
           quantity: r.quantity,
           days: r.days,
         }))
-        setRows(mapped.length ? mapped : [newEmptyRow(1)])
-        setNextId(mapped.length ? mapped.length + 1 : 2)
+        setRows(mapped.length ? mapped : [newEmptyRow(-1)])
         setCustomer({
           name: data.customer.name,
           address: data.customer.address || '',
@@ -141,6 +140,7 @@ export default function EditCustomer() {
     // Canonicalize breadType casing before sending (match the original list value)
     const normalizedRows = rows.map((r) => {
       const match = breadTypes.find((t) => t.toLowerCase() === r.breadType.trim().toLowerCase())
+      delete r.breadTypeId // ensure breadTypeId is derived from breadType
       return { ...r, breadType: match || r.breadType }
     })
     try {

@@ -104,6 +104,7 @@ async function getCustomerWithPlan(id) {
   return {
     customer,
     plan: planRows.map((r) => ({
+      planId: r.id,
       breadTypeId: r.breadTypeId,
       breadTypeName: breadIdToName.get(r.breadTypeId) || '',
       quantity: r.quantity,
