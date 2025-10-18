@@ -216,6 +216,12 @@ export default function Planner() {
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
+                <colgroup>
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '25%' }} />
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '45%' }} />
+                </colgroup>
                 <thead>
                   <tr className="text-bakery-choco/70">
                     <th className="text-left py-2 px-2">Giro</th>
@@ -236,10 +242,10 @@ export default function Planner() {
                         </span>
                       </td>
                       <td className="py-2 px-2 text-left text-bakery-choco">{r.customerName}</td>
-                      <td className="py-2 px-2 text-left text-bakery-choco">{r.breadTypeName}</td>
                       <td className="py-2 px-2 text-left text-bakery-choco font-medium">
                         {r.quantity}
                       </td>
+                      <td className="py-2 px-2 text-left text-bakery-choco">{r.breadTypeName}</td>
                     </tr>
                   ))}
                 </tbody>

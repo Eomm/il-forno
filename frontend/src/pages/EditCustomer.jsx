@@ -243,7 +243,15 @@ export default function EditCustomer() {
           onToggleDay={onToggleDay}
           showMissingDaysWarning={isAnyRowMissingDays}
         />
-        CUSTOM PLAN TODO
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-bakery-brown">Consegne speciali</h2>
+        </section>
+        <div className="overflow-x-auto">
+          Le consegne speciali vanno segnate su un foglietto e gestite manualmente.
+          <br />
+          Al momento non è possibile aggiungerle/modificarle dall&apos;app.
+        </div>
+
         <div className="pt-2 flex gap-4 flex-wrap">
           <button
             type="submit"
