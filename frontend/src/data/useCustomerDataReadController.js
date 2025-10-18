@@ -127,6 +127,60 @@ async function getCustomerWithPlan(id) {
   }
 }
 
+/**
+ * Compute a summary of deliveries for a given month.
+ * @param {Date|string|number} anyDayInMonth - Any date within the target month
+ * @returns {Promise<Array<{customerId:number, customerName:string, customerDeliveryCount:number, breadTypeId:number, breadTypeName:string, totalQuantity:number}>>}
+ */
+async function getDeliverySummaryByMonth(anyDayInMonth) {
+  const date = anyDayInMonth instanceof Date ? anyDayInMonth : new Date(anyDayInMonth)
+  // Build month prefix 'YYYY-MM' to match saved ISO timestamps reliably across timezones
+  const pad = (n) => String(n).padStart(2, '0')
+  const monthPrefix = `${date.getFullYear()}-${pad(date.getMonth() + 1)}`
+  // Filter by prefix; it's fine performance-wise for expected dataset size
+  const deliveries = await db.delivery
+    .filter((d) => typeof d?.deliveredAt === 'string' && d.deliveredAt.startsWith(monthPrefix))
+    .toArray()
+
+  if (deliveries.length === 0) return []
+
+  // Build customer map only for involved ids
+  const customerIds = Array.from(new Set(deliveries.map((d) => d.customerId)))
+  const customersArr = await db.customers.bulkGet(customerIds)
+  const customerMap = new Map()
+  customersArr.forEach((c) => {
+    customerMap.set(String(c.id), c)
+  })
+
+  // Aggregate:
+  const byClient = Object.groupBy(deliveries, (d) => {
+    return String(d.customerId) + '-' + String(d.breadTypeId)
+  })
+
+  const rows = Object.entries(byClient).map(([compositeId, clientDeliveries]) => {
+    const [customerId, breadTypeId] = compositeId.split('-')
+
+    return {
+      customerId,
+      customerName: customerMap.get(customerId)?.name || '—',
+      tier: customerMap.get(customerId)?.tier || '',
+      customerDeliveryCount: clientDeliveries.length,
+      breadTypeId,
+      breadTypeName: breadIdToName.get(Number(breadTypeId)) || '—',
+      totalQuantity: clientDeliveries.reduce((acc, d) => acc + (Number(d.quantity) || 0), 0),
+    }
+  })
+
+  // Sort by customer name then bread name
+  rows.sort((a, b) => {
+    const c = a.customerName.localeCompare(b.customerName, 'it', { sensitivity: 'base' })
+    if (c !== 0) return c
+    return a.breadTypeName.localeCompare(b.breadTypeName, 'it', { sensitivity: 'base' })
+  })
+
+  return rows
+}
+
 export function useCustomerDataReadController() {
   const breadTypes = BREAD_TYPES.map((bt) => bt.name)
   const tiers = TIERS
@@ -137,6 +191,7 @@ export function useCustomerDataReadController() {
     searchCustomers: searchCustomersByName,
     getPlanByDate,
     getCustomerWithPlan,
+    getDeliverySummaryByMonth,
   }
 }
 

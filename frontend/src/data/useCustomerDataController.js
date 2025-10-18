@@ -38,6 +38,7 @@ export function useCustomerDataController() {
     searchCustomers: read.searchCustomers,
     getPlanByDate: read.getPlanByDate,
     getCustomerWithPlan: read.getCustomerWithPlan,
+    getDeliverySummaryByMonth: read.getDeliverySummaryByMonth,
     // write functions
     submitCustomer: write.submitCustomer,
     updateCustomer: write.updateCustomer,
