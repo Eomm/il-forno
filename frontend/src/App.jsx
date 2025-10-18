@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, NavLink } from 'react-router-dom'
 import AddCustomer from './pages/AddCustomer'
 import EditCustomer from './pages/EditCustomer'
 import Planner from './pages/Planner'
+import PrintDeliveries from './pages/PrintDeliveries'
 import Delivery from './pages/Delivery'
 import Setup from './pages/Setup'
 import { useCustomerDataController } from './data/useCustomerDataController'
@@ -226,6 +227,7 @@ function App() {
           <Route path="/add-customer" element={<AddCustomer />} />
           <Route path="/planner" element={<Planner />} />
           <Route path="/delivery" element={<Delivery />} />
+          <Route path="/print/deliveries" element={<PrintDeliveries />} />
           <Route path="/customers/:id" element={<EditCustomer />} />
           <Route path="/setup" element={<Setup />} />
         </Routes>

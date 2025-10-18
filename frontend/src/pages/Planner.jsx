@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/style.css'
 import { useCustomerDataController } from '../data/useCustomerDataController'
+import { comparePlans } from '../utils/comparePlans'
 
 export default function Planner() {
   const [selectedDay, setDaySelected] = useState(new Date())
@@ -26,37 +27,7 @@ export default function Planner() {
     [selectedDay]
   )
 
-  // Compare by: tier (string) -> customerName -> breadTypeName -> quantity
-  /**
-   * Compare two PlanDelivery objects for sorting.
-   * Sort by: tier (string, locale-aware) -> customerName -> breadTypeName -> quantity (number)
-   * @param {import('../data/useCustomerDataController').PlanDelivery} a
-   * @param {import('../data/useCustomerDataController').PlanDelivery} b
-   */
-  const comparePlans = (a, b) => {
-    // tier (locale-aware string)
-    const aTierStr = a.tier.toString()
-    const bTierStr = b.tier.toString()
-    const cmpTier = aTierStr.localeCompare(bTierStr, 'it', { numeric: true, sensitivity: 'base' })
-    if (cmpTier !== 0) return cmpTier
-
-    // customerName
-    const aCust = a.customerName
-    const bCust = b.customerName
-    const cmpCust = aCust.localeCompare(bCust, 'it', { sensitivity: 'base' })
-    if (cmpCust !== 0) return cmpCust
-
-    // breadTypeName
-    const aBread = a.breadTypeName
-    const bBread = b.breadTypeName
-    const cmpBread = aBread.localeCompare(bBread, 'it', { sensitivity: 'base' })
-    if (cmpBread !== 0) return cmpBread
-
-    // quantity (numeric)
-    const aQty = Number(a.quantity)
-    const bQty = Number(b.quantity)
-    return aQty - bQty
-  }
+  // sorting handled by shared utils/comparePlans
 
   // Call when date or tier changes
   useEffect(() => {
@@ -137,6 +108,26 @@ export default function Planner() {
     } finally {
       setSaving(false)
     }
+  }
+
+  // Print button handler: navigate to print route with selected ids
+  const handlePrintDeliveries = () => {
+    if (deliveredPlanIds.length === 0) return
+
+    // Build date param as YYYY-MM-DD (using selectedDay)
+    const d = selectedDay instanceof Date ? selectedDay : new Date()
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    const dateStr = `${yyyy}-${mm}-${dd}`
+
+    // ids param
+    const ids = deliveredPlanIds.map(String).join(',')
+
+    const qs = new URLSearchParams({ date: dateStr, tier: String(selectedTier || '0'), ids })
+    const url = `/print/deliveries?${qs.toString()}`
+    // Open in new tab to keep the planner page intact
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   // Aggregate results by breadTypeName
@@ -353,6 +344,20 @@ export default function Planner() {
             </div>
             <div className="flex items-center gap-3">
               {saveMsg && <span className="text-sm text-bakery-choco/80">{saveMsg}</span>}
+              <button
+                type="button"
+                onClick={handlePrintDeliveries}
+                disabled={saving || deliveredPlanIds.length === 0}
+                className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-4 focus:ring-bakery-accent/30 disabled:opacity-40 disabled:cursor-not-allowed bg-white border border-bakery-dough text-bakery-choco hover:bg-bakery-cream`}
+                aria-disabled={saving || deliveredPlanIds.length === 0}
+                title={
+                  deliveredPlanIds.length === 0
+                    ? 'Seleziona almeno una consegna'
+                    : 'Stampa le consegne selezionate'
+                }
+              >
+                Stampa
+              </button>
               <button
                 type="button"
                 onClick={handleSaveDeliveries}
