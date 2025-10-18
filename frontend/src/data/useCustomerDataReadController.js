@@ -9,18 +9,23 @@ import { TIERS } from './tiers'
 const DB_NAME = 'il-forno'
 const STORE_CUSTOMERS = 'customers'
 const STORE_PLAN = 'plan'
+const STORE_DELIVERY = 'delivery'
 
 class IlFornoDB extends Dexie {
   /** @type {Dexie.Table<any, number>} */ customers
   /** @type {Dexie.Table<any, number>} */ plan
+  /** @type {Dexie.Table<any, number>} */ delivery
   constructor() {
     super(DB_NAME)
     this.version(1).stores({
       [STORE_CUSTOMERS]: '++id,&name,tier,createdAt',
       [STORE_PLAN]: '++id,customerId,deliveryDate,createdAt',
+      // New deliveries store: tracks completed deliveries
+      [STORE_DELIVERY]: '++id,deliveredAt,customerId,breadTypeId,deliveredPlan',
     })
     this.customers = this.table(STORE_CUSTOMERS)
     this.plan = this.table(STORE_PLAN)
+    this.delivery = this.table(STORE_DELIVERY)
   }
 }
 
@@ -78,6 +83,7 @@ async function getPlanByDate(date, tier) {
       ? filtered
       : filtered.filter((p) => customerMap.get(p.customerId)?.tier === tier)
   return byTier.map((p) => ({
+    planId: p.id,
     customerId: p.customerId,
     customerName: customerMap.get(p.customerId)?.name || '—',
     tier: customerMap.get(p.customerId)?.tier || '',

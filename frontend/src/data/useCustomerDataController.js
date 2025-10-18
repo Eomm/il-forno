@@ -44,6 +44,7 @@ export function useCustomerDataController() {
     resetLocalData: write.resetLocalData,
     exportLocalData: write.exportLocalData,
     importLocalDataFromFile: write.importLocalDataFromFile,
+    saveDelivery: write.saveDelivery,
   }
 }
 

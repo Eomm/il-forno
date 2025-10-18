@@ -5,9 +5,13 @@ import { useCustomerDataController } from '../data/useCustomerDataController'
 
 export default function Planner() {
   const [selectedDay, setDaySelected] = useState(new Date())
-  const { getPlanByDate, tiers } = useCustomerDataController()
+  const { getPlanByDate, tiers, saveDelivery } = useCustomerDataController()
   const [selectedTier, setSelectedTier] = useState('0') // '0' means all
   const [results, setResults] = useState([]) // Add results state
+  const [deliveredRows, setDeliveredRows] = useState(() => new Set())
+  const [deliveredPlanIds, setDeliveredPlanIds] = useState(() => [])
+  const [saving, setSaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState('')
 
   const formattedDate = useMemo(
     () =>
@@ -64,6 +68,76 @@ export default function Planner() {
       })
       .catch(console.error)
   }, [selectedDay, selectedTier, getPlanByDate])
+
+  // Keep delivered selections in sync with current results list
+  useEffect(() => {
+    const validIds = new Set(results.map((r) => String(r.planId)))
+    setDeliveredRows((prev) => {
+      const next = new Set([...prev].filter((id) => validIds.has(String(id))))
+      return next
+    })
+    setDeliveredPlanIds((prev) => prev.filter((id) => validIds.has(id)))
+  }, [results])
+
+  // Toggle delivered state for a given row id
+  const toggleDelivered = (planId) => {
+    setDeliveredRows((prev) => {
+      const next = new Set(prev)
+      if (next.has(planId)) next.delete(planId)
+      else next.add(planId)
+      return next
+    })
+
+    // Also keep an ordered array of dark (delivered) planIds
+    setDeliveredPlanIds((prev) => {
+      const id = String(planId)
+      const exists = prev.includes(id)
+      if (exists) {
+        return prev.filter((p) => p !== id)
+      }
+      return [...prev, id]
+    })
+  }
+
+  // Handle delivery click from button (uses data-* attributes)
+  /**
+   * @param {React.MouseEvent<HTMLButtonElement>} e
+   */
+  const handleDeliveryClick = (e) => {
+    const btn = e.currentTarget
+    const planId = String(btn.dataset.planId)
+
+    toggleDelivered(planId)
+  }
+
+  // Save button handler: persist selected deliveries into the delivery table
+  const handleSaveDeliveries = async () => {
+    if (deliveredPlanIds.length === 0) return
+    setSaving(true)
+    setSaveMsg('')
+    try {
+      // Build items from results filtered by selected ids
+      const selectedSet = new Set(deliveredPlanIds.map(String))
+      const items = results
+        .filter((r) => selectedSet.has(String(r.planId)))
+        .map((r) => ({
+          planId: r.planId,
+          quantity: r.quantity,
+          customerId: r.customerId,
+          breadTypeId: r.breadTypeId,
+        }))
+      const res = await saveDelivery({ items })
+      setSaveMsg(`Salvate ${res.saved} consegne`)
+      // Optional: clear local selection after save
+      setDeliveredRows(new Set())
+      setDeliveredPlanIds([])
+    } catch (err) {
+      console.error(err)
+      setSaveMsg(err?.message || 'Errore durante il salvataggio delle consegne')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   // Aggregate results by breadTypeName
   const summaryRows = useMemo(() => {
@@ -210,7 +284,7 @@ export default function Planner() {
 
         {/* Results card - full width below calendar, filters and summary */}
         <section className="lg:col-span-12 bg-bakery-cream rounded-xl border border-bakery-wheat p-5">
-          <h2 className="text-xl font-semibold text-bakery-brown mb-3">Consegne</h2>
+          <h2 className="text-xl font-semibold text-bakery-brown mb-1">Consegne</h2>
           {results.length === 0 ? (
             <div className="text-bakery-choco/80">Nessuna consegna per la selezione corrente.</div>
           ) : (
@@ -220,7 +294,8 @@ export default function Planner() {
                   <col style={{ width: '15%' }} />
                   <col style={{ width: '25%' }} />
                   <col style={{ width: '15%' }} />
-                  <col style={{ width: '45%' }} />
+                  <col style={{ width: '40%' }} />
+                  <col style={{ width: '5%' }} />
                 </colgroup>
                 <thead>
                   <tr className="text-bakery-choco/70">
@@ -228,13 +303,15 @@ export default function Planner() {
                     <th className="text-left py-2 px-2">Cliente</th>
                     <th className="text-left py-2 px-2">Quantità</th>
                     <th className="text-left py-2 px-2">Pane</th>
+                    <th className="text-left py-2 px-2">Consegna</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {results.map((r, idx) => (
+                  {results.map((r) => (
+                    // Build a stable row id similar to the React key
                     <tr
-                      key={`${r.customerId}-${r.breadTypeId}-${r.deliveryDate || idx}`}
-                      className="border-t border-bakery-wheat/60"
+                      key={r.planId}
+                      className={`border-t border-bakery-wheat/60 ${deliveredRows.has(String(r.planId)) ? 'bg-bakery-wheat/50' : ''}`}
                     >
                       <td className="py-2 px-2 text-left">
                         <span className="inline-flex items-center rounded-full bg-bakery-wheat/50 text-bakery-brown px-2 py-0.5 text-xs font-medium">
@@ -246,12 +323,50 @@ export default function Planner() {
                         {r.quantity}
                       </td>
                       <td className="py-2 px-2 text-left text-bakery-choco">{r.breadTypeName}</td>
+                      <td className="py-2 px-2 text-left">
+                        <button
+                          type="button"
+                          className="text-lg leading-none hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-bakery-accent/40 rounded"
+                          aria-label={`Segna consegna per ${r.customerName}`}
+                          data-plan-id={r.planId}
+                          onClick={handleDeliveryClick}
+                        >
+                          ✅
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
+        </section>
+
+        {/* Store delivers */}
+        <section className="lg:col-span-12 bg-white rounded-xl border border-bakery-wheat p-5">
+          <h2 className="text-lg font-medium text-bakery-choco mb-3">Piani consegna effettuati</h2>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-bakery-choco/90">
+              {deliveredPlanIds.length === 0
+                ? 'Nessuna consegna segnata come effettuata.'
+                : `Consegne segnate come effettuate: ${deliveredPlanIds.length}`}
+            </div>
+            <div className="flex items-center gap-3">
+              {saveMsg && <span className="text-sm text-bakery-choco/80">{saveMsg}</span>}
+              <button
+                type="button"
+                onClick={handleSaveDeliveries}
+                disabled={saving || deliveredPlanIds.length === 0}
+                className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-4 focus:ring-bakery-accent/30 disabled:opacity-40 disabled:cursor-not-allowed ${deliveredPlanIds.length > 0
+                    ? 'bg-bakery-accent text-white hover:opacity-90'
+                    : 'bg-bakery-wheat text-bakery-choco'
+                  }`}
+                aria-disabled={saving || deliveredPlanIds.length === 0}
+              >
+                {saving ? 'Salvataggio…' : 'Salva consegne'}
+              </button>
+            </div>
+          </div>
         </section>
       </div>
     </div>

@@ -169,7 +169,7 @@ function Layout({ children }) {
                 `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`
               }
             >
-              Home
+              Ricerca
             </NavLink>
             <NavLink
               to="/add-customer"
@@ -177,7 +177,7 @@ function Layout({ children }) {
                 `${linkBase} ${isActive ? 'bg-bakery-berry text-white shadow' : 'text-bakery-brown hover:bg-bakery-berry/10'}`
               }
             >
-              Add Customer
+              Aggiungi cliente
             </NavLink>
             <NavLink
               to="/planner"
