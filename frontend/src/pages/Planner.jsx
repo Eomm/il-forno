@@ -97,7 +97,7 @@ export default function Planner() {
           customerId: r.customerId,
           breadTypeId: r.breadTypeId,
         }))
-      const res = await saveDelivery({ items })
+      const res = await saveDelivery({ items, deliveredAt: selectedDay })
       setSaveMsg(`Salvate ${res.saved} consegne`)
       // Optional: clear local selection after save
       setDeliveredRows(new Set())

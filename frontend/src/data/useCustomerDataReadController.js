@@ -4,6 +4,7 @@
 import Dexie from 'dexie'
 import { BREAD_TYPES } from './breadTypes'
 import { TIERS } from './tiers'
+import { toISODate } from '../utils/date'
 
 // Dexie setup (exported so write controller can reuse same instance)
 const DB_NAME = 'il-forno'
@@ -193,12 +194,6 @@ export function useCustomerDataReadController() {
     getCustomerWithPlan,
     getDeliverySummaryByMonth,
   }
-}
-
-function toISODate(d) {
-  const date = d instanceof Date ? d : new Date(d)
-  const local = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-  return local.toISOString().slice(0, 10)
 }
 
 function dayNameFromDate(d) {

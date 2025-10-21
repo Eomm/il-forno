@@ -2,6 +2,7 @@
 
 import IDBExportImport from 'indexeddb-export-import'
 import { breadNameToId, db } from './useCustomerDataReadController'
+import { toISODate } from '../utils/date'
 import { BREAD_TYPES } from './breadTypes'
 
 // Internal helpers (write-only)
@@ -247,12 +248,14 @@ export function useCustomerDataWriteController() {
  * Persist one or more delivered plan entries into the delivery table.
  * @param {Object} params
  * @param {Array<{planId: string|number, quantity: number, customerId: number, breadTypeId: number}>} params.items
+ * @param {Date|string|number} [params.deliveredAt] - If provided, use this day as the deliveredAt value
  */
-async function saveDelivery({ items }) {
+async function saveDelivery({ items, deliveredAt }) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error('Nessuna consegna da salvare')
   }
-  const nowISO = new Date().toISOString()
+  // Normalize deliveredAt: prefer provided date (selectedDay), fallback to today
+  const deliveredAtStr = deliveredAt != null ? toISODate(deliveredAt) : toISODate(new Date())
   // Normalize and basic validation
   const rows = items.map((it) => {
     const planId = Number(it.planId)
@@ -264,7 +267,8 @@ async function saveDelivery({ items }) {
     if (!Number.isFinite(customerId)) throw new Error('customerId non valido')
     if (!Number.isFinite(breadTypeId)) throw new Error('breadTypeId non valido')
     return {
-      deliveredAt: nowISO,
+      storedAt: new Date().toISOString(),
+      deliveredAt: deliveredAtStr,
       deliveredPlan: planId,
       quantity,
       customerId,
