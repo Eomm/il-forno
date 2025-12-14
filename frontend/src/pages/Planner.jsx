@@ -223,7 +223,9 @@ export default function Planner() {
                     }, {})
                   ).map(([breadName, totalQuantity]) => (
                     <tr key={breadName} className="hover:bg-bakery-cream transition-colors">
-                      <td className="px-4 py-2 text-bakery-choco font-medium text-sm">{breadName}</td>
+                      <td className="px-4 py-2 text-bakery-choco font-medium text-sm">
+                        {breadName}
+                      </td>
                       <td className="px-4 py-2 text-bakery-choco text-sm">{totalQuantity}</td>
                     </tr>
                   ))}
