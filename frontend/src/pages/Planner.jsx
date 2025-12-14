@@ -136,6 +136,34 @@ export default function Planner() {
     }
   }
 
+  const handlePrint = () => {
+    if (deliveries.length === 0) {
+      showToast('Nessuna consegna da stampare', 'error')
+      return
+    }
+
+    const params = new URLSearchParams()
+    params.set(
+      'date',
+      selectedDay?.toLocaleDateString('it-IT', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    )
+    if (selectedVillage) {
+      params.set('village', selectedVillage)
+    } else {
+      params.set('village', 'Tutti i giri')
+    }
+    params.set('deliveries', JSON.stringify(deliveries))
+
+    const BASE_URL = import.meta.env.BASE_URL
+    const printUrl = `${BASE_URL}planner/print?${params.toString()}`
+    window.open(printUrl, '_blank')
+  }
+
   return (
     <div className="min-h-screen bg-bakery-cream">
       <Navigation />
@@ -188,14 +216,24 @@ export default function Planner() {
                 day: 'numeric',
               })}
             </h2>
-            <button
-              type="button"
-              onClick={handleSaveDeliveries}
-              disabled={isSaved || deliveries.length === 0 || loading}
-              className="bg-bakery-accent hover:bg-bakery-brown text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              Salva consegne
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handlePrint}
+                disabled={deliveries.length === 0 || loading}
+                className="bg-bakery-pistachio hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Stampa
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDeliveries}
+                disabled={isSaved || deliveries.length === 0 || loading}
+                className="bg-bakery-accent hover:bg-bakery-brown text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Salva consegne
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -213,7 +251,7 @@ export default function Planner() {
               <table className="w-full">
                 <thead className="bg-bakery-dough">
                   <tr>
-                    <th className="px-6 py-3 text-left text-bakery-choco font-semibold">Paese</th>
+                    <th className="px-6 py-3 text-left text-bakery-choco font-semibold">Giro</th>
                     <th className="px-6 py-3 text-left text-bakery-choco font-semibold">Cliente</th>
                     <th className="px-6 py-3 text-left text-bakery-choco font-semibold">
                       Quantità

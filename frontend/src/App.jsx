@@ -5,6 +5,7 @@ import GestioneClienti from './pages/GestioneClienti'
 import NuovoCliente from './pages/NuovoCliente'
 import Impostazioni from './pages/Impostazioni'
 import Planner from './pages/Planner'
+import PlannerPrint from './pages/PlannerPrint'
 
 const BASE_URL = import.meta.env.BASE_URL
 
@@ -36,6 +37,10 @@ const router = createBrowserRouter([
   {
     path: `${BASE_URL}planner`,
     element: <Planner />,
+  },
+  {
+    path: `${BASE_URL}planner/print`,
+    element: <PlannerPrint />,
   },
 ])
 
