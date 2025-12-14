@@ -5,6 +5,7 @@ import { db } from '../data/db'
 import { useBreadList } from '../data/useBreadList'
 import { showToast } from '../utils/toast'
 import { VILLAGES } from '../data/constants'
+import { toISODate } from '../utils/date'
 
 const BASE_URL = import.meta.env.BASE_URL
 
@@ -29,6 +30,7 @@ const EMPTY_PLAN_ROW = {
   friday: false,
   saturday: false,
   sunday: false,
+  createdAt: null,
 }
 
 export default function NuovoCliente() {
@@ -84,6 +86,7 @@ export default function NuovoCliente() {
         friday: plan.friday,
         saturday: plan.saturday,
         sunday: plan.sunday,
+        createdAt: plan.createdAt,
       }))
       setDeliveryPlan(planRows)
     } catch (error) {
@@ -177,11 +180,12 @@ export default function NuovoCliente() {
           village: formData.village,
           address: formData.address.trim() || null,
           priorityOrder: parseInt(formData.priorityOrder),
-          createdAt: new Date().toISOString(),
+          createdAt: toISODate(new Date()),
         })
       }
 
       // Add delivery plans
+      const todayDateOnly = toISODate(new Date())
       const plansToAdd = deliveryPlan.map((plan) => ({
         customerId: parseInt(customerIdToUse),
         breadId: parseInt(plan.breadId),
@@ -194,6 +198,7 @@ export default function NuovoCliente() {
         friday: plan.friday,
         saturday: plan.saturday,
         sunday: plan.sunday,
+        createdAt: plan.createdAt || todayDateOnly,
       }))
 
       await db.plan.bulkAdd(plansToAdd)

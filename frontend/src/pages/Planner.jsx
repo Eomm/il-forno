@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { DayPicker } from 'react-day-picker'
+import { it } from 'react-day-picker/locale'
 import 'react-day-picker/style.css'
 import Navigation from '../components/Navigation'
 import { db } from '../data/db'
 import { VILLAGES } from '../data/constants'
+import { showToast } from '../utils/toast'
+import { toISODate } from '../utils/date'
 
 const DAYS_MAP = {
   0: 'sunday',
@@ -20,9 +23,11 @@ export default function Planner() {
   const [selectedVillage, setSelectedVillage] = useState('')
   const [deliveries, setDeliveries] = useState([])
   const [loading, setLoading] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
 
   useEffect(() => {
     loadDeliveries()
+    setIsSaved(false)
   }, [selectedDay, selectedVillage])
 
   const loadDeliveries = async () => {
@@ -35,12 +40,15 @@ export default function Planner() {
     try {
       const dayOfWeek = selectedDay.getDay()
       const dayName = DAYS_MAP[dayOfWeek]
-      const selectedDateStr = selectedDay.toISOString().split('T')[0]
+      const selectedDateStr = toISODate(selectedDay)
 
       // Fetch all plans that match the day of week OR specific delivery date
+      // AND createdAt >= selectedDate
       const plans = await db.plan
         .filter((plan) => {
-          return plan[dayName] === true || plan.deliveryDate === selectedDateStr
+          const matchesDayOrDate = plan[dayName] === true || plan.deliveryDate === selectedDateStr
+          const matchesCreatedAt = !plan.createdAt || plan.createdAt <= selectedDateStr
+          return matchesDayOrDate && matchesCreatedAt
         })
         .toArray()
 
@@ -59,6 +67,8 @@ export default function Planner() {
             village: customer?.village || '',
             customerName: customer?.name || '',
             priorityOrder: customer?.priorityOrder || 0,
+            customerId: plan.customerId,
+            breadId: plan.breadId,
             quantity: plan.quantity,
             breadName: bread?.name || '',
           }
@@ -69,11 +79,17 @@ export default function Planner() {
       const filteredDeliveries = deliveriesData
         .filter((delivery) => delivery !== null)
         .sort((a, b) => {
-          // Sort by Village DESC, then priorityOrder ASC
+          // Sort by Village DESC, then priorityOrder ASC, then customerId ASC, then breadId ASC
           if (a.village !== b.village) {
             return b.village.localeCompare(a.village)
           }
-          return a.priorityOrder - b.priorityOrder
+          if (a.priorityOrder !== b.priorityOrder) {
+            return a.priorityOrder - b.priorityOrder
+          }
+          if (a.customerId !== b.customerId) {
+            return a.customerId - b.customerId
+          }
+          return a.breadId - b.breadId
         })
 
       setDeliveries(filteredDeliveries)
@@ -82,6 +98,41 @@ export default function Planner() {
       setDeliveries([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSaveDeliveries = async () => {
+    if (deliveries.length === 0) {
+      showToast('Nessuna consegna da salvare', 'error')
+      return
+    }
+
+    try {
+      const selectedDateStr = selectedDay.toISOString().split('T')[0]
+
+      // Fetch bread prices for all deliveries
+      const deliveredRecords = await Promise.all(
+        deliveries.map(async (delivery) => {
+          const bread = await db.bread.where('name').equals(delivery.breadName).first()
+
+          return {
+            deliveredAt: selectedDateStr,
+            village: delivery.village,
+            customerId: delivery.customerId,
+            breadName: delivery.breadName,
+            breadPriceCent: bread?.price_cent || 0,
+            quantity: delivery.quantity,
+          }
+        })
+      )
+
+      await db.delivered.bulkAdd(deliveredRecords)
+
+      setIsSaved(true)
+      showToast(`${deliveries.length} consegne salvate`, 'success')
+    } catch (error) {
+      console.error('Error saving deliveries:', error)
+      showToast('Errore nel salvataggio delle consegne', 'error')
     }
   }
 
@@ -98,9 +149,11 @@ export default function Planner() {
               <label className="block text-bakery-choco font-semibold mb-2">Seleziona Data</label>
               <DayPicker
                 mode="single"
+                timeZone="Europe/Rome"
                 selected={selectedDay}
                 onSelect={setSelectedDay}
                 showOutsideDays
+                locale={it}
                 weekStartsOn={1}
               />
             </div>
@@ -125,15 +178,25 @@ export default function Planner() {
 
         {/* Deliveries List Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-semibold text-bakery-choco mb-4">
-            Consegne per{' '}
-            {selectedDay?.toLocaleDateString('it-IT', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold text-bakery-choco">
+              Consegne per{' '}
+              {selectedDay?.toLocaleDateString('it-IT', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </h2>
+            <button
+              type="button"
+              onClick={handleSaveDeliveries}
+              disabled={isSaved || deliveries.length === 0 || loading}
+              className="bg-bakery-accent hover:bg-bakery-brown text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              Salva consegne
+            </button>
+          </div>
 
           {loading ? (
             <div className="text-center py-12">
