@@ -1,6 +1,6 @@
-import Navigation from '../components/Navigation';
+import Navigation from '../components/Navigation'
 
-export default function Impostazioni () {
+export default function Impostazioni() {
   return (
     <div className="min-h-screen bg-bakery-cream">
       <Navigation />
@@ -8,5 +8,5 @@ export default function Impostazioni () {
         <h1 className="text-4xl font-bold text-bakery-choco">Impostazioni</h1>
       </main>
     </div>
-  );
+  )
 }
