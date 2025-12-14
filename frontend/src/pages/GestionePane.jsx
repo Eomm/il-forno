@@ -153,11 +153,18 @@ export default function GestionePane() {
   }
 
   async function handleDelete(bread) {
-    const confirmDelete = confirm(`Sei sicuro di voler eliminare "${bread.name}"?`)
+    const confirmDelete = confirm(
+      `Sei sicuro di voler eliminare "${bread.name}"?\n\nVerranno eliminati anche tutti i piani di consegna associati a questo pane.`
+    )
     if (!confirmDelete) return
 
     try {
+      // Delete all delivery plans associated with this bread
+      await db.plan.where('breadId').equals(bread.id).delete()
+
+      // Delete the bread
       await db.bread.delete(bread.id)
+
       showToast('Pane eliminato con successo', 'success')
       loadBreadList()
     } catch (error) {

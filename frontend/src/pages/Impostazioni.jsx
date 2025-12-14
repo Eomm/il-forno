@@ -87,7 +87,9 @@ export default function Impostazioni() {
 
     try {
       const idbDatabase = db.backendDB()
-      await clearDatabase(idbDatabase)
+      await new Promise((resolve, reject) => {
+        clearDatabase(idbDatabase, (err) => (err ? reject(err) : resolve()))
+      })
 
       showToast('Dati cancellati con successo', 'success')
 
