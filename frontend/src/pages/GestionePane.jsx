@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Navigation from '../components/Navigation'
 import { db } from '../data/db'
+import { useBreadList } from '../data/useBreadList'
 import { showToast } from '../utils/toast'
 
 function BreadEdit({ bread, onClose, onSave }) {
@@ -139,25 +140,9 @@ function BreadEdit({ bread, onClose, onSave }) {
 }
 
 export default function GestionePane() {
-  const [breadList, setBreadList] = useState([])
+  const { breadList, loadBreadList } = useBreadList()
   const [showModal, setShowModal] = useState(false)
   const [editingBread, setEditingBread] = useState(null)
-
-  // Load bread list from database
-  useEffect(() => {
-    loadBreadList()
-  }, [])
-
-  async function loadBreadList() {
-    try {
-      const breads = await db.bread.toArray()
-      const sortedBreads = breads.sort((a, b) => a.name.localeCompare(b.name))
-      setBreadList(sortedBreads)
-    } catch (error) {
-      showToast('Errore nel caricamento dei dati', 'error')
-      console.error(error)
-    }
-  }
 
   function openAddModal() {
     setEditingBread(null)
