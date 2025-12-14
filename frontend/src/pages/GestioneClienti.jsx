@@ -3,10 +3,9 @@ import { Link } from 'react-router-dom'
 import Navigation from '../components/Navigation'
 import { db } from '../data/db'
 import { showToast } from '../utils/toast'
+import { VILLAGES } from '../data/constants'
 
 const BASE_URL = import.meta.env.BASE_URL
-
-const VILLAGES = ['Este', 'Villa', 'Deserto', "Sant'Elena"]
 
 export default function GestioneClienti() {
   const [customers, setCustomers] = useState([])

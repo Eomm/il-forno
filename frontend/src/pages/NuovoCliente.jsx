@@ -4,10 +4,10 @@ import Navigation from '../components/Navigation'
 import { db } from '../data/db'
 import { useBreadList } from '../data/useBreadList'
 import { showToast } from '../utils/toast'
+import { VILLAGES } from '../data/constants'
 
 const BASE_URL = import.meta.env.BASE_URL
 
-const VILLAGES = ['Este', 'Villa', 'Deserto', "Sant'Elena"]
 const WEEKDAYS = [
   { key: 'monday', label: 'Lunedì' },
   { key: 'tuesday', label: 'Martedì' },

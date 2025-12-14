@@ -84,6 +84,9 @@
   - Backup Data: button to export the current database to a JSON file
   - Restore Data: button to import a JSON file and restore the database (with confirmation prompt)
   - Clear Data: button to clear all data from the database (with confirmation prompt)
+- Planner: this shows a planner view of the deliveries. The planner has a `DayPicker` component to select the date and the
+  village select dropdown as filter (or "All Villages" option). When the user selects a date, the software calculates the corresponding day of the week selected (eg: monday),
+  then it fetches all the `plan` records from all the customers (filtered by village if necessary) that have the corresponding day of the week checked in their delivery plan.
 
 ## Project specific guidelines
 

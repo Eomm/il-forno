@@ -24,6 +24,14 @@ export default function Navigation() {
             </li>
             <li>
               <Link
+                to={`${BASE_URL}planner`}
+                className="hover:text-bakery-berry transition-colors font-medium"
+              >
+                Planner
+              </Link>
+            </li>
+            <li>
+              <Link
                 to={`${BASE_URL}gestione-pane`}
                 className="hover:text-bakery-berry transition-colors font-medium"
               >

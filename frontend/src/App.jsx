@@ -4,6 +4,7 @@ import GestionePane from './pages/GestionePane'
 import GestioneClienti from './pages/GestioneClienti'
 import NuovoCliente from './pages/NuovoCliente'
 import Impostazioni from './pages/Impostazioni'
+import Planner from './pages/Planner'
 
 const BASE_URL = import.meta.env.BASE_URL
 
@@ -31,6 +32,10 @@ const router = createBrowserRouter([
   {
     path: `${BASE_URL}impostazioni`,
     element: <Impostazioni />,
+  },
+  {
+    path: `${BASE_URL}planner`,
+    element: <Planner />,
   },
 ])
 
