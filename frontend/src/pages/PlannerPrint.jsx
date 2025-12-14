@@ -43,7 +43,6 @@ export default function PlannerPrint() {
   return (
     <div className="print-container">
       <div className="print-header no-print">
-        <h1 className="print-title">Il Forno - Planner Consegne</h1>
         {date && <p className="print-info">Data: {date}</p>}
         {village && <p className="print-info">Giro: {village}</p>}
       </div>

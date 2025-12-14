@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { DayPicker } from 'react-day-picker'
 import { it } from 'react-day-picker/locale'
 import 'react-day-picker/style.css'
@@ -25,12 +25,7 @@ export default function Planner() {
   const [loading, setLoading] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
 
-  useEffect(() => {
-    loadDeliveries()
-    setIsSaved(false)
-  }, [selectedDay, selectedVillage])
-
-  const loadDeliveries = async () => {
+  const loadDeliveries = useCallback(async () => {
     if (!selectedDay) {
       setDeliveries([])
       return
@@ -64,13 +59,14 @@ export default function Planner() {
           }
 
           return {
-            village: customer?.village || '',
-            customerName: customer?.name || '',
-            priorityOrder: customer?.priorityOrder || 0,
+            village: customer.village,
+            customerName: customer.name,
+            priorityOrder: customer.priorityOrder,
             customerId: plan.customerId,
             breadId: plan.breadId,
             quantity: plan.quantity,
-            breadName: bread?.name || '',
+            breadName: bread.name,
+            breadPriceCent: bread.price_cent,
           }
         })
       )
@@ -99,7 +95,12 @@ export default function Planner() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedDay, selectedVillage])
+
+  useEffect(() => {
+    loadDeliveries()
+    setIsSaved(false)
+  }, [loadDeliveries])
 
   const handleSaveDeliveries = async () => {
     if (deliveries.length === 0) {
@@ -110,21 +111,15 @@ export default function Planner() {
     try {
       const selectedDateStr = selectedDay.toISOString().split('T')[0]
 
-      // Fetch bread prices for all deliveries
-      const deliveredRecords = await Promise.all(
-        deliveries.map(async (delivery) => {
-          const bread = await db.bread.where('name').equals(delivery.breadName).first()
-
-          return {
-            deliveredAt: selectedDateStr,
-            village: delivery.village,
-            customerId: delivery.customerId,
-            breadName: delivery.breadName,
-            breadPriceCent: bread?.price_cent || 0,
-            quantity: delivery.quantity,
-          }
-        })
-      )
+      // Use cached bread prices from deliveries
+      const deliveredRecords = deliveries.map((delivery) => ({
+        deliveredAt: selectedDateStr,
+        village: delivery.village,
+        customerId: delivery.customerId,
+        breadName: delivery.breadName,
+        breadPriceCent: delivery.breadPriceCent,
+        quantity: delivery.quantity,
+      }))
 
       await db.delivered.bulkAdd(deliveredRecords)
 
@@ -203,6 +198,40 @@ export default function Planner() {
             </div>
           </div>
         </div>
+
+        {/* Bread Summary Section */}
+        {deliveries.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <h2 className="text-xl font-semibold text-bakery-choco mb-3">Riepilogo Pane</h2>
+            <div className="overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-bakery-dough">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-bakery-choco font-semibold text-sm">
+                      Tipo di Pane
+                    </th>
+                    <th className="px-4 py-2 text-left text-bakery-choco font-semibold text-sm">
+                      Quantità Totale
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-bakery-wheat">
+                  {Object.entries(
+                    deliveries.reduce((acc, delivery) => {
+                      acc[delivery.breadName] = (acc[delivery.breadName] || 0) + delivery.quantity
+                      return acc
+                    }, {})
+                  ).map(([breadName, totalQuantity]) => (
+                    <tr key={breadName} className="hover:bg-bakery-cream transition-colors">
+                      <td className="px-4 py-2 text-bakery-choco font-medium text-sm">{breadName}</td>
+                      <td className="px-4 py-2 text-bakery-choco text-sm">{totalQuantity}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Deliveries List Section */}
         <div className="bg-white rounded-lg shadow p-6">
