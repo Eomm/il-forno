@@ -87,6 +87,12 @@
 - Planner: this shows a planner view of the deliveries. The planner has a `DayPicker` component to select the date and the
   village select dropdown as filter (or "All Villages" option). When the user selects a date, the software calculates the corresponding day of the week selected (eg: monday),
   then it fetches all the `plan` records from all the customers (filtered by village if necessary) that have the corresponding day of the week checked in their delivery plan.
+- Consegne fatte: this page shows the deliveries made. The user can select a date range with a `DayPicker` component.
+  Once the range is selected, the software shows a list of deliveries made for that date, grouped by village. Each delivery entry shows:
+  - Customer Name
+  - Quantity
+  - Total € (calculated as quantity * bread price)
+
 
 ## Project specific guidelines
 

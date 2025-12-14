@@ -43,7 +43,7 @@ function BreadEdit({ bread, onClose, onSave }) {
         await db.bread.update(bread.id, {
           name: formData.name.trim(),
           price_cent: priceCent,
-          visible: formData.visible,
+          visible: true,
         })
         showToast('Pane aggiornato con successo', 'success')
       } else {
@@ -51,7 +51,7 @@ function BreadEdit({ bread, onClose, onSave }) {
         await db.bread.add({
           name: formData.name.trim(),
           price_cent: priceCent,
-          visible: formData.visible,
+          visible: true,
         })
         showToast('Pane aggiunto con successo', 'success')
       }
@@ -104,18 +104,6 @@ function BreadEdit({ bread, onClose, onSave }) {
                 Prezzo: {formatPrice(parseInt(formData.price_cent) || 0)}
               </p>
             )}
-          </div>
-
-          <div className="mb-6">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.visible}
-                onChange={(e) => setFormData({ ...formData, visible: e.target.checked })}
-                className="w-5 h-5 text-bakery-accent focus:ring-bakery-accent border-bakery-dough rounded"
-              />
-              <span className="ml-2 text-bakery-choco font-semibold">Visibile</span>
-            </label>
           </div>
 
           <div className="flex justify-end space-x-3">
@@ -208,7 +196,6 @@ export default function GestionePane() {
                 <tr>
                   <th className="px-6 py-3 text-left text-bakery-choco font-semibold">Nome</th>
                   <th className="px-6 py-3 text-left text-bakery-choco font-semibold">Prezzo</th>
-                  <th className="px-6 py-3 text-left text-bakery-choco font-semibold">Visibile</th>
                   <th className="px-6 py-3 text-right text-bakery-choco font-semibold">Azioni</th>
                 </tr>
               </thead>
@@ -217,13 +204,6 @@ export default function GestionePane() {
                   <tr key={bread.id} className="hover:bg-bakery-cream transition-colors">
                     <td className="px-6 py-4 text-bakery-choco">{bread.name}</td>
                     <td className="px-6 py-4 text-bakery-choco">{formatPrice(bread.price_cent)}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 rounded text-sm ${bread.visible ? 'bg-bakery-pistachio text-white' : 'bg-gray-400 text-white'}`}
-                      >
-                        {bread.visible ? 'Sì' : 'No'}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <button
                         type="button"

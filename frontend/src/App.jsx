@@ -6,6 +6,7 @@ import NuovoCliente from './pages/NuovoCliente'
 import Impostazioni from './pages/Impostazioni'
 import Planner from './pages/Planner'
 import PlannerPrint from './pages/PlannerPrint'
+import ConsegneFatte from './pages/ConsegneFatte'
 
 const BASE_URL = import.meta.env.BASE_URL
 
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
   {
     path: `${BASE_URL}planner/print`,
     element: <PlannerPrint />,
+  },
+  {
+    path: `${BASE_URL}consegne-fatte`,
+    element: <ConsegneFatte />,
   },
 ])
 

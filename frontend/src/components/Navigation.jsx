@@ -32,6 +32,14 @@ export default function Navigation() {
             </li>
             <li>
               <Link
+                to={`${BASE_URL}consegne-fatte`}
+                className="hover:text-bakery-berry transition-colors font-medium"
+              >
+                Consegne Fatte
+              </Link>
+            </li>
+            <li>
+              <Link
                 to={`${BASE_URL}gestione-pane`}
                 className="hover:text-bakery-berry transition-colors font-medium"
               >
